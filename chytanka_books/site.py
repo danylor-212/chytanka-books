@@ -34,6 +34,22 @@ def page_url(base: str, n: int) -> str:
     return f"{base}opds/index.xml" if n == 1 else f"{base}opds/all-{n}.xml"
 
 
+FW_TITLE_BYTES = 160  # OpdsParser MAX_TITLE_CHARS counts BYTES and may cut a UTF-8 sequence in half
+
+
+def fit_bytes(text: str, limit: int = FW_TITLE_BYTES) -> str:
+    """Shorten at a word boundary (with «…») so the UTF-8 form fits the firmware limit."""
+    if len(text.encode("utf-8")) <= limit:
+        return text
+    words, out = text.split(), ""
+    for w in words:
+        trial = f"{out} {w}".strip()
+        if len((trial + "…").encode("utf-8")) > limit:
+            break
+        out = trial
+    return out.rstrip(" ,.;:") + "…"
+
+
 def book_entry(b: dict, base: str) -> str:
     slug = b["slug"]
     ed = b["edition"]
@@ -41,13 +57,14 @@ def book_entry(b: dict, base: str) -> str:
     ed_bits = ", ".join(str(x) for x in (ed.get("city"), ed.get("publisher"), ed.get("year")) if x)
     src = b.get("source_note") or ed_bits or "Вікіджерела"
     content = f"{b['summary']} Джерело тексту: {src}. Рік смерті автора: {b['author_died']}."
+    cat = f'\n    <category term="{esc(b["genre"])}" label="{esc(b["genre"])}"/>' if b.get("genre") else ""
     return f"""  <entry>
     <id>urn:chytanka:book:{esc(slug)}</id>
-    <title>{esc(b['title'])}</title>
+    <title>{esc(fit_bytes(b.get('feed_title') or b['title']))}</title>
     <author><name>{esc(b['author'])}</name></author>
     <updated>{iso(b['_updated'])}</updated>
     <dc:language>uk</dc:language>{issued}
-    <dc:publisher>Читанка</dc:publisher>
+    <dc:publisher>Читанка</dc:publisher>{cat}
     <rights>Текст — суспільне надбання. Оцифрування: Вікіджерела. Видання: CC BY-SA 4.0</rights>
     <summary type="text">{esc(b['summary'])}</summary>
     <content type="text">{esc(content)}</content>
@@ -96,22 +113,76 @@ def human_size(n: int) -> str:
     return f"{n / 1024:.0f} КБ" if n < 1024 * 1024 else f"{n / 1024 / 1024:.1f} МБ"
 
 
+GENRE_ORDER = ["Проза", "Поезія", "Драма", "Дитяча", "Спогади, есеї, нонфікшн"]
+
+
+def surname(author: str) -> str:
+    parts = author.split()
+    return author if author in ("Леся Українка", "Марко Вовчок", "Панас Мирний", "Дніпрова Чайка") or len(parts) < 2 \
+        else parts[-1]
+
+
+UK_ALPHABET = "абвгґдеєжзиіїйклмнопрстуфхцчшщьюя"
+
+
+def uk_key(text: str) -> tuple:
+    """Ukrainian alphabetical order (Python's code-point order puts є/і/ї/ґ after я)."""
+    return tuple(UK_ALPHABET.index(c) if c in UK_ALPHABET else 100 + ord(c) for c in text.lower())
+
+
+def sort_books(books: list[dict]) -> list[dict]:
+    """Catalogue order: genre (fixed order), then author surname, then title."""
+    def key(b):
+        g = b.get("genre") or "Інше"
+        gi = GENRE_ORDER.index(g) if g in GENRE_ORDER else len(GENRE_ORDER)
+        return (gi, uk_key(surname(b["author"])), uk_key(b["title"]))
+    return sorted(books, key=key)
+
+
+def genre_slug(g: str) -> str:
+    return {"Проза": "proza", "Поезія": "poeziia", "Драма": "drama", "Дитяча": "dytiacha",
+            "Спогади, есеї, нонфікшн": "nonfiction"}.get(g, "inshe")
+
+
 def landing_html(site: dict, books: list[dict]) -> str:
     base = site["base_url"]
-    cards = []
+    books = sort_books(books)
+    total = sum(b["_size"] for b in books)
+    sections, nav = [], []
+    genres: dict[str, list[dict]] = {}
     for b in books:
-        ed = b["edition"]
-        ed_bits = ", ".join(str(x) for x in (ed.get("city"), ed.get("year")) if x)
-        cards.append(f"""      <li class="book">
-        <a class="cover" href="books/{esc(b['slug'])}.epub"><img src="covers/{esc(b['slug'])}.jpg" width="150" height="225" alt="Обкладинка: {esc(b['title'])}" loading="lazy"></a>
-        <div class="meta">
-          <p class="author">{esc(b['author'])}</p>
-          <h3>{esc(b['title'])}</h3>
-          <p class="summary">{esc(b['summary'])}</p>
-          <p class="facts">{esc(ed_bits if ed.get('city') else (b.get('source_note') or 'Вікіджерела'))} · <a href="{esc(b['_source_url'])}">джерело</a></p>
-          <a class="dl" href="books/{esc(b['slug'])}.epub">Завантажити EPUB · {human_size(b['_size'])}</a>
-        </div>
-      </li>""")
+        genres.setdefault(b.get("genre") or "Інше", []).append(b)
+    for g, gbooks in genres.items():
+        nav.append(f'<a href="#{genre_slug(g)}">{esc(g)} <span>{len(gbooks)}</span></a>')
+        by_author: dict[str, list[dict]] = {}
+        for b in gbooks:
+            by_author.setdefault(b["author"], []).append(b)
+        blocks = []
+        for author, abooks in by_author.items():
+            items = []
+            for b in abooks:
+                ed = b["edition"]
+                ed_bits = ", ".join(str(x).replace("; ", "–") for x in (ed.get("city"), ed.get("year")) if x) if ed.get("city") or ed.get("year") \
+                    else (b.get("source_note") or "Вікіджерела")
+                items.append(f"""        <li class="book">
+          <a class="cover" href="books/{esc(b['slug'])}.epub"><img src="covers/{esc(b['slug'])}.jpg" width="200" height="300" alt="" loading="lazy"></a>
+          <div class="meta">
+            <h4><a href="books/{esc(b['slug'])}.epub">{esc(b['title'])}</a></h4>
+            <p class="sub">{esc(b.get('subtitle') or '')}</p>
+            <p class="summary">{esc(b['summary'])}</p>
+            <p class="facts">{esc(ed_bits)} · <a href="{esc(b['_source_url'])}">Вікіджерела</a> · <a class="dl" href="books/{esc(b['slug'])}.epub">EPUB, {human_size(b['_size'])}</a></p>
+          </div>
+        </li>""")
+            blocks.append(f"""      <div class="author-block">
+      <h3>{esc(author)} <span class="died">(†{abooks[0]['author_died']})</span></h3>
+      <ul class="books">
+{chr(10).join(items)}
+      </ul>
+      </div>""")
+        sections.append(f"""  <section class="genre" id="{genre_slug(g)}">
+    <h2>{esc(g)}</h2>
+{chr(10).join(blocks)}
+  </section>""")
     return f"""<!doctype html>
 <html lang="uk">
 <head>
@@ -133,18 +204,24 @@ def landing_html(site: dict, books: list[dict]) -> str:
   .lede {{ color:var(--muted); margin:6px 0 0; }}
   .feed {{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin: 28px 0 36px; }}
   .feed code {{ display:block; overflow-x:auto; white-space:nowrap; font: 15px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; padding:10px 12px; background:var(--bg); border-radius:6px; margin:8px 0; }}
-  h2 {{ font-size:1.25rem; margin: 36px 0 12px; }}
-  ul.books {{ list-style:none; padding:0; margin:0; display:grid; gap:18px; }}
-  .book {{ display:flex; gap:18px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }}
-  .book .cover img {{ display:block; width:110px; height:auto; border:1px solid var(--line); }}
-  .book h3 {{ margin: 0 0 6px; font-size:1.2rem; }}
-  .author {{ margin:0; color:var(--muted); font-size:.9rem; letter-spacing:.04em; text-transform:uppercase; }}
-  .summary {{ margin: 0 0 6px; }}
-  .facts {{ margin:0 0 10px; color:var(--muted); font-size:.9rem; }}
+  nav.genres {{ display:flex; flex-wrap:wrap; gap:8px; margin: 8px 0 8px; }}
+  nav.genres a {{ text-decoration:none; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:4px 12px; font-size:.95rem; }}
+  nav.genres a span {{ color:var(--muted); font-size:.85em; margin-left:2px; }}
+  h2 {{ font-size:1.5rem; margin: 44px 0 4px; padding-bottom:6px; border-bottom:2px solid var(--ink); }}
+  h3 {{ font-size:.95rem; letter-spacing:.06em; text-transform:uppercase; margin: 26px 0 10px; font-weight:600; }}
+  h3 .died {{ color:var(--muted); font-weight:400; letter-spacing:0; text-transform:none; }}
+  ul.books {{ list-style:none; padding:0; margin:0; display:grid; gap:12px; }}
+  .book {{ display:flex; gap:16px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }}
+  .book .cover img {{ display:block; width:72px; height:auto; border:1px solid var(--line); }}
+  .book h4 {{ margin: 0; font-size:1.1rem; line-height:1.3; }}
+  .book h4 a {{ text-decoration:none; }}
+  .sub {{ margin:0 0 4px; color:var(--muted); font-style:italic; font-size:.92rem; }}
+  .summary {{ margin: 0 0 4px; font-size:.95rem; }}
+  .facts {{ margin:0; color:var(--muted); font-size:.88rem; }}
   a {{ color:inherit; }}
-  a.dl {{ display:inline-block; padding:6px 12px; border:1.5px solid var(--ink); border-radius:6px; text-decoration:none; font-size:.95rem; }}
+  a.dl {{ font-weight:600; color:var(--ink); }}
   footer {{ margin-top:48px; color:var(--muted); font-size:.92rem; border-top:1px solid var(--line); padding-top:18px; }}
-  @media (max-width: 520px) {{ .book {{ flex-direction:column; }} }}
+  @media (max-width: 520px) {{ .book .cover img {{ width:56px; }} }}
 </style>
 </head>
 <body>
@@ -163,10 +240,10 @@ def landing_html(site: dict, books: list[dict]) -> str:
     <span class="lede">English: OPDS 1.2 catalogue of public-domain Ukrainian classics, generated from uk.wikisource.</span>
   </section>
 
-  <h2>Книжки ({len(books)})</h2>
-  <ul class="books">
-{chr(10).join(cards)}
-  </ul>
+  <p class="lede">{len(books)} книжок, {human_size(total)} разом. Упорядковано за жанром і автором.</p>
+  <nav class="genres">{" ".join(nav)}</nav>
+
+{chr(10).join(sections)}
 
   <footer>
     <p><strong>Ліцензія.</strong> Тексти творів — суспільне надбання. Оцифрування й вичитка — волонтери
@@ -194,7 +271,7 @@ def licence_txt(site: dict, books: list[dict]) -> str:
         "Обкладинки: шрифт Literata (SIL OFL 1.1), знак «Читанки».",
         "",
     ]
-    for b in books:
+    for b in sort_books(books):
         ed = b["edition"]
         ed_bits = ", ".join(str(x) for x in (ed.get("city"), ed.get("publisher"), ed.get("year")) if x)
         rev = f" (ревізія {b['_revid']})" if b.get("_revid") else ""

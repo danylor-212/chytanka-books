@@ -48,11 +48,15 @@ def _draw_tracked(draw, cx: int, y: int, text: str, font, fill, tracking: int = 
 
 
 def _wrap(draw, text: str, font, max_w: int) -> list[str]:
-    words = text.split()
+    """Greedy word wrap; hyphenated compounds («Наталка-Полтавка») may break after the hyphen."""
+    import re
+
+    tokens = re.findall(r"\S+?-(?=\S)|\S+", text)
     lines: list[str] = []
     cur = ""
-    for w in words:
-        trial = f"{cur} {w}".strip()
+    for w in tokens:
+        sep = "" if cur.endswith("-") else " "
+        trial = f"{cur}{sep}{w}".strip() if cur else w
         if draw.textlength(trial, font=font) <= max_w or not cur:
             cur = trial
         else:

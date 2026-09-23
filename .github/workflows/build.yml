@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
       - name: Build EPUBs + OPDS feed
         # Fetches fresh exports from ws-export.wmcloud.org (polite: 2 s between books).
         # Exits non-zero if any EPUB fails the structural checks.

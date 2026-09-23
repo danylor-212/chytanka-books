@@ -32,7 +32,7 @@ import yaml
 
 from chytanka_books import cover as cov
 from chytanka_books.epub import process_epub, ws_url
-from chytanka_books.site import build_feeds, human_size, landing_html, licence_txt
+from chytanka_books.site import build_feeds, human_size, landing_html, licence_txt, sort_books
 from chytanka_books.validate import validate_epub
 
 ROOT = Path(__file__).resolve().parent
@@ -101,7 +101,7 @@ def edition_line(book: dict) -> str | None:
 
 
 def make_cover(book: dict):
-    return cov.render_cover(title=book["title"], author=book["author"], subtitle=book.get("subtitle"),
+    return cov.render_cover(title=book.get("cover_title") or book["title"], author=book["author"], subtitle=book.get("subtitle"),
                             edition_line=edition_line(book), fonts_dir=FONTS, logo_png=MARK)
 
 
@@ -115,6 +115,59 @@ def write_site_assets(out: Path) -> None:
     (out / ".nojekyll").write_text("")
 
 
+def catalogue_md(site: dict, rows: list[dict]) -> str:
+    from chytanka_books.site import GENRE_ORDER, surname, uk_key
+
+    def key(r):
+        g = r.get("genre") or "Інше"
+        return (GENRE_ORDER.index(g) if g in GENRE_ORDER else 99, uk_key(surname(r["author"])), uk_key(r["title"]))
+
+    rows = sorted(rows, key=key)
+    pub = [r for r in rows if r["release_ready"]]
+    lines = [f"# {site['title']} — каталог", "",
+             f"Згенеровано `build.py` {datetime.now(timezone.utc):%Y-%m-%d}. Опубліковано: **{len(pub)}**, "
+             f"відкладено (hold / не пройшли перевірку): **{len(rows) - len(pub)}**. "
+             f"Загальний обсяг опублікованих EPUB: **{human_size(sum(r['size_out'] for r in pub))}**.", "",
+             "Виноски: «прибрано» — редакторські (US-only або strip_editorial), «авт.» — збережені авторські, "
+             "«у тексті» — виноски видань поза NY, що лишилися без змін (юридично PD).", ""]
+    genre = None
+    for r in rows:
+        g = r.get("genre") or "Інше"
+        if g != genre:
+            genre = g
+            lines += ["", f"## {g}", "", "| Автор | Твір | Жанр | Видання | Розмір | Виноски | Ілюстрації | Статус |",
+                      "|---|---|---|---|---|---|---|---|"]
+        ed = r.get("edition") or {}
+        ed_s = r.get("source_note") or ", ".join(str(x) for x in (ed.get("city"), ed.get("publisher"), ed.get("year")) if x)
+        flags = []
+        if r.get("us_only_edition"):
+            flags.append("US-only")
+        if r.get("strip_editorial"):
+            flags.append("strip_editorial")
+        notes = []
+        if r["notes_removed"]:
+            notes.append(f"прибрано {len(r['notes_removed'])}")
+        if r["notes_kept"]:
+            notes.append(f"авт. {len(r['notes_kept'])}")
+        if r["notes_in_text"]:
+            notes.append(f"у тексті {r['notes_in_text']}")
+        imgs = f"прибрано {len(r['images_removed'])}" if r["images_removed"] else "—"
+        extra = []
+        if r["chapters_dropped"]:
+            extra.append(f"вилучено сторінок: {len(r['chapters_dropped'])}")
+        if r["chapters_split"]:
+            extra.append(f"поділено розділів: {len(r['chapters_split'])}")
+        status = "✅ опубліковано" if r["release_ready"] else "⏸ " + "; ".join(r["not_ready_reasons"])[:160]
+        if extra:
+            status += " (" + ", ".join(extra) + ")"
+        lines.append(f"| {r['author']} | {r['title']} | {r.get('subtitle') or ''} | {ed_s}{' · ' + ', '.join(flags) if flags else ''} "
+                     f"| {human_size(r['size_out'])} | {', '.join(notes) or '—'} | {imgs} | {status} |")
+    dropped = [(r["title"], d) for r in rows for d in r["chapters_dropped"]]
+    if dropped:
+        lines += ["", "## Вилучені сторінки (не належать до твору)", ""] + [f"- «{t}»: {d}" for t, d in dropped]
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(ROOT / "books.yaml"))
@@ -125,6 +178,7 @@ def main() -> int:
     ap.add_argument("--base-url", help="override site.base_url (must end with /)")
     ap.add_argument("--page-size", type=int, help="override entries per OPDS page (firmware max 50)")
     ap.add_argument("--preview", help="also write a contact sheet PNG of all covers here")
+    ap.add_argument("--summary", help="also write a Markdown catalogue summary here")
     ap.add_argument("--report", default=None, help="write JSON build report here (default: <out>/../build-report.json)")
     args = ap.parse_args()
 
@@ -162,7 +216,7 @@ def main() -> int:
             else datetime.now(timezone.utc).replace(microsecond=0)
 
         img = make_cover(book)
-        cover_imgs.append(img)
+        cover_imgs.append((book["slug"], img))
         epub, rep = process_epub(raw, book, cover_jpeg=cov.jpeg_bytes(img, (600, 900)), source_url=src_url,
                                  revid=revid, rev_ts=rev_ts, site_url=site["base_url"], modified=updated)
         errs = validate_epub(epub)
@@ -171,15 +225,22 @@ def main() -> int:
         if book.get("hold"):
             rep.block(f"held in books.yaml: {book['hold']}")
 
-        print(f"   {human_size(rep.size_raw)} -> {human_size(rep.size_out)}; fonts -{len(rep.fonts_removed)} "
-              f"({human_size(rep.fonts_bytes)}); images removed {len(rep.images_removed)}; "
-              f"notes removed {len(rep.notes_removed)} kept {len(rep.notes_kept)}; licence boxes {rep.licence_boxes_removed}; "
-              f"links unwrapped {rep.links_unwrapped}; bad/wiki-only CSS decls dropped {rep.css_dropped}; release-ready: {'YES' if rep.release_ready else 'NO'}")
+        print(f"   {human_size(rep.size_raw)} -> {human_size(rep.size_out)}; largest xhtml {human_size(rep.largest_xhtml)}; "
+              f"images -{len(rep.images_removed)}; notes -{len(rep.notes_removed)} kept(author) {len(rep.notes_kept)} "
+              f"in-text {rep.notes_in_text}; toc tables {rep.toc_tables_collapsed}; entity spans {rep.entity_spans_unwrapped}; "
+              f"split {len(rep.chapters_split)}; dropped chapters {len(rep.chapters_dropped)}; "
+              f"CSS decls -{rep.css_dropped}; release-ready: {'YES' if rep.release_ready else 'NO'}")
+        for d in rep.chapters_dropped:
+            print(f"   dropped (not part of the work): {d}")
         for r in rep.not_ready_reasons:
             print(f"   NOT READY: {r}")
 
         row = {k: v for k, v in rep.__dict__.items()}
-        row.update(title=book["title"], author=book["author"], revid=revid, rev_ts=rev_ts, source=src_url)
+        row.update(title=book["title"], author=book["author"], revid=revid, rev_ts=rev_ts, source=src_url,
+                   genre=book.get("genre"), edition=book.get("edition"), source_note=book.get("source_note"),
+                   subtitle=book.get("subtitle"), us_only_edition=bool(book.get("us_only_edition")),
+                   strip_editorial=bool(book.get("strip_editorial")), strip_images=bool(book.get("strip_images")),
+                   hold=book.get("hold"))
         report_rows.append(row)
         if not rep.release_ready:
             failed = failed or bool(errs)
@@ -189,6 +250,7 @@ def main() -> int:
         cov.save_jpeg(img, out / "covers" / f"{book['slug']}-600.jpg", (600, 900), quality=85)
         published.append({**book, "_size": len(epub), "_updated": updated, "_source_url": src_url, "_revid": revid})
 
+    published = sort_books(published)
     for rel, xml in build_feeds(site, published, page_size).items():
         (out / rel).write_text(xml, encoding="utf-8")
     (out / "index.html").write_text(landing_html(site, published), encoding="utf-8")
@@ -197,8 +259,15 @@ def main() -> int:
 
     rp = Path(args.report) if args.report else out.parent / "build-report.json"
     rp.write_text(json.dumps(report_rows, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    if args.summary:
+        Path(args.summary).write_text(catalogue_md(site, report_rows), encoding="utf-8")
+        print(f"summary: {args.summary}")
     if args.preview:
-        cov.contact_sheet(cover_imgs, Path(args.preview))
+        order = {b["slug"]: i for i, b in enumerate(sort_books([{**b, "_size": 0} for b in cfg["books"]]))}
+        imgs = [im for _, im in sorted(cover_imgs, key=lambda t: order.get(t[0], 0))]
+        big = len(imgs) > 12
+        cov.contact_sheet(imgs, Path(args.preview), cols=10 if big else 3, cell=(240, 360) if big else (400, 600),
+                          gap=24 if big else 40)
         print(f"preview: {args.preview}")
     print(f"published {len(published)} book(s) -> {out}")
     return 1 if failed else 0

@@ -21,6 +21,8 @@ from urllib.parse import quote
 
 from lxml import etree
 
+from chytanka_books import transforms as tf
+
 XHTML = "http://www.w3.org/1999/xhtml"
 EPUB_NS = "http://www.idpf.org/2007/ops"
 OPF = "http://www.idpf.org/2007/opf"
@@ -35,6 +37,10 @@ KNOWN_EXT = tuple(set(MEDIA_EXT.values()) | {".jpeg"})
 NOISE_ATTRS = {"about", "typeof", "resource", "decoding", "loading", "srcset", "data-mw", "data-file-type",
                "data-file-width", "data-file-height", "data-mw-section-id", "data-mw-footnote-number",
                "data-mw-parsoid-version", "data-mw-html-version", "data-page-number"}
+
+# Largest XHTML we emit (bytes). «Ніоба» at 462 KB is the known-good ceiling on the
+# device; we aim lower so page indexing stays quick on the ESP32-C3.
+SPLIT_LIMIT = 280_000
 
 XML_PARSER = etree.XMLParser(resolve_entities=False, remove_blank_text=False, strip_cdata=False, huge_tree=True)
 
@@ -53,6 +59,12 @@ class Report:
     licence_boxes_removed: int = 0
     links_unwrapped: int = 0
     css_dropped: int = 0
+    entity_spans_unwrapped: int = 0
+    toc_tables_collapsed: int = 0
+    chapters_dropped: list[str] = field(default_factory=list)
+    chapters_split: list[str] = field(default_factory=list)
+    notes_in_text: int = 0          # footnotes left in the book (non-stripped editions)
+    largest_xhtml: int = 0
     other_removed: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     release_ready: bool = True
@@ -183,10 +195,13 @@ def esc(s: str) -> str:
 
 # --------------------------------------------------------------------------- per-document cleanup
 
-def clean_content_doc(root, *, us_only: bool, keep_markers: list[str], report: Report, fname: str,
-                      book_title: str = "") -> None:
+def clean_content_doc(root, *, strip_notes: bool, strip_images: bool, keep_markers: list[str], report: Report,
+                      fname: str, book_title: str = "") -> None:
     body = root.find(q("body"))
     head = root.find(q("head"))
+
+    # P3: Parsoid <span typeof="mw:Entity"> around every &nbsp; — unwrap to text first.
+    report.entity_spans_unwrapped += tf.unwrap_entity_spans(root)
 
     # 0. WS Export puts the collection path in <title> ("Твори. Том II — …").
     t = head.find(q("title")) if head is not None else None
@@ -217,16 +232,18 @@ def clean_content_doc(root, *, us_only: bool, keep_markers: list[str], report: R
                 remove_keep_tail(el)
         report.licence_boxes_removed += 1
 
-    # 3. Illustrations. US-only editions: remove every image (the edition's
-    #    illustrations are not PD outside the US). Others: drop only PD icons
-    #    (they belong to the licence boxes removed above).
+    # P1: dotted-leader TOC tables (ws-summary) -> plain list of links.
+    report.toc_tables_collapsed += tf.collapse_toc_tables(root)
+
+    # 3. Illustrations. US-only / strip_editorial / strip_images: remove every image.
+    #    Others: drop only PD icons (they belong to the licence boxes removed above).
     for im in list(body.iter(q("img"))):
         if im.getroottree().getroot() is not root:
             continue  # already detached with an earlier wrapper
         res = im.get("resource") or im.get("src") or ""
-        if not (us_only or "PD-icon" in res):
+        if not (strip_images or "PD-icon" in res):
             continue
-        if us_only:
+        if strip_images:
             report.images_removed.append(f"{fname}: {res.lstrip('./')}")
         target = im
         anc = im.getparent()
@@ -247,8 +264,10 @@ def clean_content_doc(root, *, us_only: bool, keep_markers: list[str], report: R
         if "mw-ref-follow" in classes(sup):
             remove_keep_tail(sup)
 
-    # 4. Footnotes: in US-only editions keep only explicit author notes.
-    if us_only:
+    # 4. Footnotes: in US-only / strip_editorial editions keep only explicit author notes.
+    if not strip_notes:
+        report.notes_in_text += sum(1 for li in body.iter(q("li")) if (li.get("id") or "").startswith("cite_note"))
+    if strip_notes:
         notes = {}
         for li in body.iter(q("li")):
             nid = li.get("id") or ""
@@ -309,6 +328,9 @@ def clean_content_doc(root, *, us_only: bool, keep_markers: list[str], report: R
         elif (a.get("rel") or "").startswith("mw:referencedBy"):
             pass
 
+    # 6b. XHTML5 content-model repairs (MathML braces, <dl> without <dt>, blocks inside inline).
+    tf.fix_content_model(root)
+
     # 7. Parsoid attributes.
     sanitize_inline_styles(root, report)
     for el in root.iter():
@@ -326,6 +348,8 @@ def clean_content_doc(root, *, us_only: bool, keep_markers: list[str], report: R
     for sp in list(body.iter(q("span"))):
         if (not sp.attrib or "mw-empty-elt" in classes(sp)) and not len(sp) and not (sp.text or "").strip():
             remove_keep_tail(sp)
+    # P3: attribute-less wrapper spans (after Parsoid attrs were stripped)
+    tf.unwrap_bare_spans(root)
 
 
 # --------------------------------------------------------------------------- generated pages
@@ -435,6 +459,9 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
     slug = book["slug"]
     report = Report(slug=slug, size_raw=len(raw))
     us_only = bool(book.get("us_only_edition"))
+    strip_editorial = bool(book.get("strip_editorial"))
+    strip_notes = us_only or strip_editorial
+    strip_images = strip_notes or bool(book.get("strip_images"))
     keep_markers = list(book.get("keep_note_markers") or [])
     modified = modified or datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -453,7 +480,19 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
     manifest = opf.find("opf:manifest", NS)
     spine = opf.find("opf:spine", NS)
     metadata = opf.find("opf:metadata", NS)
-    items = {it.get("id"): it for it in manifest.findall("opf:item", NS)}
+    # WS Export sometimes lists a subpage twice (manifest + spine) — keep the first.
+    items = {}
+    for it in manifest.findall("opf:item", NS):
+        if it.get("id") in items:
+            manifest.remove(it)
+            report.other_removed.append(f"duplicate manifest item: {it.get('id')}")
+        else:
+            items[it.get("id")] = it
+    seen_refs = set()
+    for ir in spine.findall("opf:itemref", NS):
+        if ir.get("idref") in seen_refs:
+            spine.remove(ir)
+        seen_refs.add(ir.get("idref"))
 
     # ---- 1. fonts
     for iid, it in list(items.items()):
@@ -474,7 +513,9 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
             css = files[p].decode("utf-8")
             css = re.sub(r"@font-face\s*\{[^}]*\}\s*", "", css)
             css = re.sub(r'body\s*\{\s*font-family:\s*"FreeSerif"\s*;?\s*\}\s*', "", css)
-            css += "\n/* Chytanka */\n.center, .tiInherit { text-indent: 0; }\n.cover img { max-width: 100%; }\n"
+            css += ("\n/* Chytanka */\n.center, .tiInherit { text-indent: 0; }\n.cover img { max-width: 100%; }\n"
+                    "div.dd { margin-left: 1.5em; }\nul.toc { list-style: none; padding-left: 0; }\n"
+                    "ul.toc li { margin: 0.2em 0; }\nli.toc-head { font-weight: bold; margin-top: 0.6em; }\n")
             files[p] = css.encode("utf-8")
     # iBooks "use embedded fonts" flag is meaningless now.
     files.pop("META-INF/com.apple.ibooks.display-options.xml", None)
@@ -492,15 +533,95 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
 
     # ---- 3. content documents
     spine_ids = [ir.get("idref") for ir in spine.findall("opf:itemref", NS)]
-    for iid in spine_ids:
-        it = items.get(iid)
-        if it is None or iid == "about" or it.get("media-type") != "application/xhtml+xml":
+    content_ids = [iid for iid in spine_ids if iid in items and iid != "about"
+                   and items[iid].get("media-type") == "application/xhtml+xml"]
+    docs = {iid: etree.fromstring(files[full(items[iid].get("href"))], XML_PARSER) for iid in content_ids}
+
+    # 3a. Contamination guard: WS Export pulls in every main-namespace page the
+    #     root links to (publisher ads, other works). Keep only root + subpages.
+    if content_ids:
+        root_id = content_ids[0]
+        root_href = posixpath.basename(items[root_id].get("href"))
+        titles = tf.chapter_title_map(docs)
+        root_title = book["page"]
+        dropped_hrefs = set()
+        for iid in content_ids[1:]:
+            href = posixpath.basename(items[iid].get("href"))
+            title = titles.get(href)
+            excluded = next((x for x in (book.get("exclude_pages") or []) if title and x in title), None)
+            if excluded or not tf.is_own_chapter(title, href, root_title, root_href):
+                label = title or href
+                report.chapters_dropped.append(label + (" [exclude_pages у books.yaml]" if excluded else ""))
+                dropped_hrefs.add(href)
+                files.pop(full(items[iid].get("href")), None)
+                manifest.remove(items[iid])
+                del items[iid]
+                del docs[iid]
+                for ir in spine.findall("opf:itemref", NS):
+                    if ir.get("idref") == iid:
+                        spine.remove(ir)
+        if dropped_hrefs:
+            for root in docs.values():
+                for a in list(root.iter(q("a"))):
+                    if (a.get("href") or "").split("#")[0] in dropped_hrefs:
+                        unwrap(a)
+        content_ids = [i for i in content_ids if i in docs]
+
+    for iid in content_ids:
+        p = full(items[iid].get("href"))
+        clean_content_doc(docs[iid], strip_notes=strip_notes, strip_images=strip_images, keep_markers=keep_markers,
+                          report=report, fname=posixpath.basename(p), book_title=book["title"])
+
+    # 3b. P2: split over-large documents (firmware-friendly size), fix fragment links.
+    part_labels: dict[str, str | None] = {}
+    families: dict[str, list[str]] = {}   # original href -> [part hrefs]
+    for iid in list(content_ids):
+        it = items[iid]
+        href = it.get("href")
+        parts = tf.split_document(docs[iid], limit=SPLIT_LIMIT)
+        if len(parts) == 1:
             continue
-        p = full(it.get("href"))
-        root = etree.fromstring(files[p], XML_PARSER)
-        clean_content_doc(root, us_only=us_only, keep_markers=keep_markers, report=report, fname=posixpath.basename(p),
-                          book_title=book["title"])
-        files[p] = serialize_xhtml(root)
+        stem = href.rsplit(".", 1)[0]
+        hrefs = [href] + [f"{stem}-p{k}.xhtml" for k in range(2, len(parts) + 1)]
+        families[href] = hrefs
+        report.chapters_split.append(f"{posixpath.basename(href)} -> {len(parts)} parts")
+        docs[iid] = parts[0]
+        prev_item, prev_ref = it, next(ir for ir in spine.findall("opf:itemref", NS) if ir.get("idref") == iid)
+        for k, (ph, part) in enumerate(zip(hrefs[1:], parts[1:]), 2):
+            pid = f"{iid}-p{k}"
+            new_it = etree.Element(q("item", OPF), id=pid, href=ph, attrib={"media-type": "application/xhtml+xml"})
+            prev_item.addnext(new_it)
+            new_ref = etree.Element(q("itemref", OPF), idref=pid, linear="yes")
+            prev_ref.addnext(new_ref)
+            prev_item, prev_ref = new_it, new_ref
+            items[pid] = new_it
+            docs[pid] = part
+            body = part.find(q("body"))
+            first = next((e for e in body.iter() if e is not body and isinstance(e.tag, str)
+                          and tf.text_of(e)), None)
+            part_labels[ph] = tf.heading_text(first) if first is not None and tf._is_heading(first) else None
+        content_ids = [i for i in (ir.get("idref") for ir in spine.findall("opf:itemref", NS)) if i in docs]
+    if families:
+        ids_in = {items[i].get("href"): {e.get("id") for e in docs[i].iter() if isinstance(e.tag, str) and e.get("id")}
+                  for i in docs}
+        fam_of = {h: fam for fam in families.values() for h in fam}
+        for iid, root in docs.items():
+            own = items[iid].get("href")
+            for a in root.iter(q("a")):
+                href = a.get("href") or ""
+                if "#" not in href or href.startswith(("http://", "https://")):
+                    continue
+                f, frag = href.split("#", 1)
+                target = f or own
+                if target in fam_of and frag not in ids_in.get(target, ()):
+                    owner = next((h for h in fam_of[target] if frag in ids_in[h]), None)
+                    if owner:
+                        a.set("href", ("" if owner == own else owner) + "#" + frag)
+
+    for iid, root in docs.items():
+        data = serialize_xhtml(root)
+        files[full(items[iid].get("href"))] = data
+        report.largest_xhtml = max(report.largest_xhtml, len(data))
 
     # WS credits page is kept verbatim, but its inline CSS gets the same sanitiser.
     if "about" in items:
@@ -564,12 +685,26 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
         changes.append("ліцензійні плашки Вікіджерел замінено цією сторінкою")
     if report.images_renamed:
         changes.append("нормалізовано імена файлів зображень")
+    kept = f"; авторські виноски ({len(report.notes_kept)}) збережено" if report.notes_kept else ""
     if us_only:
         if report.images_removed:
             changes.append(f"прибрано ілюстрації видання ({len(report.images_removed)}) — вони не є суспільним надбанням поза США")
         if report.notes_removed:
-            kept = f"; авторські виноски ({len(report.notes_kept)}) збережено" if report.notes_kept else ""
             changes.append(f"прибрано редакторські виноски видання ({len(report.notes_removed)}){kept}")
+    elif strip_editorial:
+        if report.images_removed:
+            changes.append(f"прибрано ілюстрації видання ({len(report.images_removed)})")
+        if report.notes_removed:
+            changes.append(f"прибрано редакторські виноски видання ({len(report.notes_removed)}){kept}")
+    elif report.images_removed:
+        changes.append(f"прибрано ілюстрації й фотографії видання ({len(report.images_removed)}), щоб зменшити файл")
+    if report.chapters_dropped:
+        changes.append(f"вилучено сторінки, що не належать до твору ({len(report.chapters_dropped)}): "
+                       + "; ".join(report.chapters_dropped[:5]) + ("…" if len(report.chapters_dropped) > 5 else ""))
+    if report.toc_tables_collapsed:
+        changes.append("таблиці змісту перетворено на простий список")
+    if report.chapters_split:
+        changes.append("завеликі розділи поділено на кілька файлів")
     files[full("chytanka-credits.xhtml")] = credits_xhtml(book, source_url=source_url, revid=revid, rev_ts=rev_ts,
                                                           changes=changes, site_url=site_url)
     etree.SubElement(manifest, q("item", OPF), id="chytanka-credits", href="chytanka-credits.xhtml",
@@ -592,6 +727,15 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
     uid = f"urn:chytanka:book:{slug}"
     for el in list(metadata):
         tag = etree.QName(el).localname if isinstance(el.tag, str) else ""
+        if tag == "date":
+            # WS copies the wiki «рік» field verbatim («1920-ті», «192?») — keep only W3CDTF years.
+            yr = (book.get("edition") or {}).get("year")
+            m = re.match(r"^\d{4}(-\d\d(-\d\d)?)?$", (el.text or "").strip())
+            if yr:
+                el.text = str(yr)
+            elif not m:
+                metadata.remove(el)
+            continue
         if tag in ("identifier", "title", "creator", "rights", "language", "publisher", "description", "subject"):
             metadata.remove(el)
         elif tag == "meta" and (el.get("name") == "cover" or el.get("property") in ("dcterms:modified",)
@@ -652,6 +796,10 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
         it = items.get(iid) if iid not in ("chytanka-credits",) else None
         href = it.get("href") if it is not None else "chytanka-credits.xhtml"
         label = labels.get(href)
+        if href in part_labels:
+            if part_labels[href]:
+                toc_items.append((part_labels[href], href))
+            continue
         if iid == "chytanka-credits":
             label = "Про це видання"
         elif iid == "about":

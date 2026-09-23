@@ -28,6 +28,8 @@ from chytanka_books.epub import sanitize_css_declarations
 OPF = "http://www.idpf.org/2007/opf"
 DC = "http://purl.org/dc/elements/1.1/"
 NS = {"opf": OPF, "dc": DC}
+# «Ніоба» (462 KB in one XHTML) is the largest chapter known to work on the X4.
+MAX_XHTML_BYTES = 462_000
 
 
 def validate_epub(data: bytes) -> list[str]:
@@ -53,6 +55,8 @@ def validate_epub(data: bytes) -> list[str]:
 
     parser = etree.XMLParser(resolve_entities=False, huge_tree=True)
     for n in names:
+        if n.endswith((".xhtml", ".html")) and z.getinfo(n).file_size > MAX_XHTML_BYTES:
+            errors.append(f"XHTML too large for the device ({z.getinfo(n).file_size} B > {MAX_XHTML_BYTES}): {n}")
         if n.endswith((".xml", ".xhtml", ".opf", ".ncx", ".html", ".svg")):
             try:
                 etree.fromstring(z.read(n), parser)
