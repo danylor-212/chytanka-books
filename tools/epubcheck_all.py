@@ -35,6 +35,11 @@ def main() -> int:
 
     rows, bad = [], 0
     for epub in args.epubs:
+        if not os.path.isfile(epub):  # e.g. an unexpanded shell glob — never report it as "ok"
+            print(f"  FATAL: no such file: {epub}")
+            rows.append((os.path.basename(epub), 1, 0, 0, "FAIL"))
+            bad += 1
+            continue
         proc = subprocess.run(cmd + [epub], capture_output=True, text=True)
         out = proc.stdout + proc.stderr
         m = re.search(r"Messages:\s*(\d+) fatals?\s*/\s*(\d+) errors?\s*/\s*(\d+) warnings?", out)
