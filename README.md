@@ -16,7 +16,7 @@
 | `build.py` | збирання: завантаження → чистка → обкладинка → перевірка → `public/` |
 | `chytanka_books/epub.py` | постобробка EPUB (шрифти, розмітка, виноски, ілюстрації, OPF/nav/NCX) |
 | `chytanka_books/cover.py` | типографічні обкладинки (Literata, ґрейскейл, 2:3) |
-| `chytanka_books/validate.py` | структурна перевірка EPUB на Python (замість epubcheck) |
+| `chytanka_books/validate.py` | структурна перевірка EPUB на Python (швидка, без Java; доповнює epubcheck) |
 | `chytanka_books/site.py` | OPDS-фід і лендинг |
 | `tools/opds_harness/` | прогін фіду через **парсер самої прошивки** (`lib/OpdsParser`) на хості |
 | `.github/workflows/build.yml` | CI: збирання на push / щотижня / вручну і деплой на Pages |
@@ -59,7 +59,9 @@ tools/opds_harness/run.sh                      # перевірити фід п�
 8. **Метадані**: `dc:language=uk`, чисті `dc:title`/`dc:creator` з `books.yaml`, `dc:identifier=urn:chytanka:book:<slug>`, `dcterms:modified` = max(`site.pipeline_date`, час ревізії на Вікіджерелах) — збирання відтворювані байт у байт. Nav і NCX генеруються наново.
 9. **Перевірка**: zip (`mimetype` перший і STORED), well-formed XML, маніфест ↔ файли, spine, внутрішні посилання, обкладинка, відсутність шрифтів. Книжка з помилками **не публікується**, а збирання падає.
 
-Повний `epubcheck` потребує Java; у CI він запускається інформаційно (`continue-on-error`).
+Повний `epubcheck` (W3C, потребує Java) — обов'язковий крок CI: `tools/epubcheck_all.py` перевіряє всі книжки, друкує підсумок і падає на будь-якій помилці чи попередженні. Локально: `python tools/epubcheck_all.py --jar <epubcheck.jar> public/books/*.epub`.
+
+Некоректний inline-CSS із шаблонів Вікіджерел (`width:;`, незбалансовані лапки тощо) і вікі-хаки верстки (`position`, `z-index`, `font-family`) вичищаються генерично в `sanitize_inline_styles`.
 
 ## Обмеження прошивки, під які зроблено фід
 

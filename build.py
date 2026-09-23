@@ -174,7 +174,7 @@ def main() -> int:
         print(f"   {human_size(rep.size_raw)} -> {human_size(rep.size_out)}; fonts -{len(rep.fonts_removed)} "
               f"({human_size(rep.fonts_bytes)}); images removed {len(rep.images_removed)}; "
               f"notes removed {len(rep.notes_removed)} kept {len(rep.notes_kept)}; licence boxes {rep.licence_boxes_removed}; "
-              f"links unwrapped {rep.links_unwrapped}; release-ready: {'YES' if rep.release_ready else 'NO'}")
+              f"links unwrapped {rep.links_unwrapped}; bad/wiki-only CSS decls dropped {rep.css_dropped}; release-ready: {'YES' if rep.release_ready else 'NO'}")
         for r in rep.not_ready_reasons:
             print(f"   NOT READY: {r}")
 

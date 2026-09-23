@@ -15,12 +15,15 @@ matter for the Chytanka firmware and most readers:
 
 from __future__ import annotations
 
+import html
 import io
 import posixpath
 import re
 import zipfile
 
 from lxml import etree
+
+from chytanka_books.epub import sanitize_css_declarations
 
 OPF = "http://www.idpf.org/2007/opf"
 DC = "http://purl.org/dc/elements/1.1/"
@@ -130,6 +133,11 @@ def validate_epub(data: bytes) -> list[str]:
             if p not in names:
                 continue
             doc = z.read(p).decode("utf-8", "replace")
+            for m in re.finditer(r'\sstyle="([^"]*)"', doc):
+                _, dropped = sanitize_css_declarations(html.unescape(m.group(1)))
+                if dropped:
+                    errors.append(f"unsanitised inline CSS in {p}: {dropped[:3]}")
+                    break
             for m in re.finditer(r'(?:src|href)="([^"]+)"', doc):
                 ref = m.group(1)
                 if re.match(r"^[a-z]+:", ref) or ref.startswith("#"):

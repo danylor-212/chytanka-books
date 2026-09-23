@@ -52,6 +52,7 @@ class Report:
     notes_kept: list[str] = field(default_factory=list)
     licence_boxes_removed: int = 0
     links_unwrapped: int = 0
+    css_dropped: int = 0
     other_removed: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     release_ready: bool = True
@@ -126,6 +127,49 @@ def is_empty(el) -> bool:
         return all(is_empty(c) and not (c.tail or "").strip() for c in el) and not (el.text or "").strip() \
             and not any(c.tag in (q("img"), q("br"), q("hr")) for c in el.iter())
     return not (el.text or "").strip() and el.tag not in (q("img"), q("br"), q("hr"))
+
+
+_PROP_RE = re.compile(r"^-?[a-zA-Z][a-zA-Z0-9-]*$")
+# Wiki-only layout hacks that make no sense (or harm) on a paginated e-reader.
+_DROP_PROPS = {"position", "z-index", "right", "left", "top", "bottom", "font-family"}
+
+
+def sanitize_css_declarations(style: str) -> tuple[str, list[str]]:
+    """Return (clean_style, dropped). Template output on Wikisource often leaves
+    declarations with empty values (`width:;`), stray tokens or unbalanced
+    quotes/parens — invalid CSS that epubcheck rejects (CSS-008)."""
+    kept, dropped = [], []
+    for decl in style.split(";"):
+        decl = decl.strip()
+        if not decl:
+            continue
+        prop, sep, value = decl.partition(":")
+        prop, value = prop.strip().lower(), value.strip()
+        important = value.lower().endswith("!important")
+        if important:
+            value = value[: -len("!important")].strip()
+        ok = (sep and _PROP_RE.match(prop) and value
+              and value.count("(") == value.count(")")
+              and value.count('"') % 2 == 0 and value.count("'") % 2 == 0
+              and not re.search(r"[{};<>]", value))
+        if not ok or prop in _DROP_PROPS:
+            dropped.append(decl)
+            continue
+        kept.append(f"{prop}:{value}{' !important' if important else ''}")
+    return "; ".join(kept), dropped
+
+
+def sanitize_inline_styles(root, report: "Report | None" = None) -> None:
+    for el in root.iter():
+        if not isinstance(el.tag, str) or "style" not in el.attrib:
+            continue
+        clean, dropped = sanitize_css_declarations(el.get("style"))
+        if report is not None:
+            report.css_dropped += len(dropped)
+        if clean:
+            el.set("style", clean)
+        else:
+            del el.attrib["style"]
 
 
 def serialize_xhtml(root) -> bytes:
@@ -266,6 +310,7 @@ def clean_content_doc(root, *, us_only: bool, keep_markers: list[str], report: R
             pass
 
     # 7. Parsoid attributes.
+    sanitize_inline_styles(root, report)
     for el in root.iter():
         if not isinstance(el.tag, str):
             continue
@@ -455,6 +500,13 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
         root = etree.fromstring(files[p], XML_PARSER)
         clean_content_doc(root, us_only=us_only, keep_markers=keep_markers, report=report, fname=posixpath.basename(p),
                           book_title=book["title"])
+        files[p] = serialize_xhtml(root)
+
+    # WS credits page is kept verbatim, but its inline CSS gets the same sanitiser.
+    if "about" in items:
+        p = full(items["about"].get("href"))
+        root = etree.fromstring(files[p], XML_PARSER)
+        sanitize_inline_styles(root, report)
         files[p] = serialize_xhtml(root)
 
     # ---- 4. images: garbage-collect unreferenced, give the rest real extensions
