@@ -32,7 +32,7 @@ import yaml
 
 from chytanka_books import cover as cov
 from chytanka_books.epub import process_epub, ws_url
-from chytanka_books.site import build_feeds, human_size, landing_html, licence_txt, sort_books
+from chytanka_books.site import build_feeds, human_size, landing_html, licence_txt, normalize_book, sort_books, typographic_apostrophes
 from chytanka_books.validate import validate_epub
 
 ROOT = Path(__file__).resolve().parent
@@ -184,6 +184,9 @@ def main() -> int:
 
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     site = cfg["site"]
+    for k in ("title", "subtitle", "author"):
+        site[k] = typographic_apostrophes(site.get(k))
+    cfg["books"] = [normalize_book(b) for b in cfg["books"]]
     if args.base_url:
         site["base_url"] = args.base_url
     if not site["base_url"].endswith("/"):

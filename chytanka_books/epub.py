@@ -807,7 +807,7 @@ def process_epub(raw: bytes, book: dict, *, cover_jpeg: bytes, source_url: str, 
         elif not label or label == ws_title or "—" in label and label.endswith(book["title"].split(" (")[0]) \
                 or re.sub(r"\s", "", label).startswith("Твори"):
             label = book["title"]
-        toc_items.append((label, href))
+        toc_items.append((re.sub(r"(?<=[^\W\d_])'(?=[^\W\d_])", "\u2019", label), href))
     first_body = next((h for l, h in toc_items[1:]), "cover.xhtml")
     landmarks = [("cover", "Обкладинка", "cover.xhtml"), ("bodymatter", "Текст", first_body),
                  ("colophon", "Про це видання", "chytanka-credits.xhtml")]

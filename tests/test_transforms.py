@@ -133,6 +133,20 @@ class FeedTitle(unittest.TestCase):
         self.assertEqual(fit_bytes("Місто"), "Місто")
 
 
+class Apostrophes(unittest.TestCase):
+    def test_normalize(self):
+        from chytanka_books.site import normalize_book
+        b = normalize_book({"page": "Арії трьох П'єро", "slug": "semenko", "title": "Арії трьох П'єро",
+                            "author": "Валер'ян Підмогильний", "summary": "'Цитата' і сім'я",
+                            "edition": {"city": "Київ", "publisher": "Вид-во 'Рух'", "year": 1927}})
+        self.assertEqual(b["title"], "Арії трьох П’єро")
+        self.assertEqual(b["author"], "Валер’ян Підмогильний")
+        self.assertEqual(b["summary"], "'Цитата' і сім’я")          # quotes at word edges untouched
+        self.assertEqual(b["page"], "Арії трьох П'єро")            # wiki title untouched
+        self.assertEqual(b["edition"]["publisher"], "Вид-во 'Рух'")
+        self.assertEqual(b["edition"]["year"], 1927)
+
+
 class Css(unittest.TestCase):
     def test_sanitize(self):
         clean, dropped = sanitize_css_declarations("float:right; width:; color:red !important; position:absolute")

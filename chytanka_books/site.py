@@ -15,11 +15,36 @@ Firmware constraints (chytanka-main lib/OpdsParser, src/util/UrlUtils.cpp):
 from __future__ import annotations
 
 import html
+import re
 from datetime import datetime
 
 ATOM_NS = "http://www.w3.org/2005/Atom"
 ACQ = "application/atom+xml;profile=opds-catalog;kind=acquisition"
 NAV = "application/atom+xml;profile=opds-catalog;kind=navigation"
+
+
+_APOS_RE = re.compile(r"(?<=[^\W\d_])['\u02bc`\u00b4](?=[^\W\d_])")
+
+
+def typographic_apostrophes(text):
+    """Ukrainian apostrophe: ASCII ' (and ʼ ` ´) between letters -> U+2019 ’. Non-strings pass through."""
+    return _APOS_RE.sub("\u2019", text) if isinstance(text, str) else text
+
+
+# Human-readable fields drawn on covers / written to OPF, OPDS and the landing page.
+# Never `page` (wiki title), `slug` or URLs.
+DISPLAY_FIELDS = ("title", "author", "subtitle", "summary", "pd_status", "source_note", "cover_title", "feed_title",
+                  "series", "genre")
+
+
+def normalize_book(book: dict) -> dict:
+    b = dict(book)
+    for k in DISPLAY_FIELDS:
+        if k in b:
+            b[k] = typographic_apostrophes(b[k])
+    if isinstance(b.get("edition"), dict):
+        b["edition"] = {k: typographic_apostrophes(v) for k, v in b["edition"].items()}
+    return b
 
 
 def esc(s: str) -> str:
