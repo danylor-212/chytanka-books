@@ -1,0 +1,65 @@
+name: Build & deploy catalogue
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"   # weekly, Monday 03:17 UTC — picks up fixes made on uk.wikisource
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build EPUBs + OPDS feed
+        # Fetches fresh exports from ws-export.wmcloud.org (polite: 2 s between books).
+        # Exits non-zero if any EPUB fails the structural checks.
+        run: python build.py --cache "$RUNNER_TEMP/ws-cache"
+
+      - name: epubcheck (informational)
+        # Structural checks already ran in build.py; this is the full W3C validator.
+        # Switch continue-on-error to false once the current books pass cleanly.
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq epubcheck
+          for f in public/books/*.epub; do echo "== $f"; epubcheck "$f"; done
+
+      - name: Build report
+        if: always()
+        run: cat build-report.json || true
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

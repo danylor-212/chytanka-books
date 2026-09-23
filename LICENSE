@@ -1,0 +1,44 @@
+Цей репозиторій містить матеріали під різними ліцензіями.
+This repository contains material under several licences.
+
+1. Скрипти збирання / Build scripts
+   (build.py, chytanka_books/, tools/, .github/) — MIT License:
+
+   MIT License
+
+   Copyright (c) 2026 Chytanka contributors
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+2. Згенеровані EPUB (public/books/*.epub) / Generated EPUBs
+   - Тексти творів — суспільне надбання (див. books.yaml, поле pd_status).
+     Literary texts are in the public domain.
+   - Транскрипція та розмітка — волонтери uk.wikisource.org, CC BY-SA
+     (WS Export віддає під CC BY-SA 3.0 Unported / GFDL).
+   - Змінені видання «Читанки» (без вбудованих шрифтів, з обкладинкою і сторінкою
+     «Про це видання») — Creative Commons Attribution-ShareAlike 4.0 International:
+     https://creativecommons.org/licenses/by-sa/4.0/
+     (переліцензування 3.0 -> 4.0 дозволене п. 4(b) CC BY-SA 3.0 Unported).
+   Атрибуції по кожній книжці: сторінка «Про це видання» в EPUB і
+   public/LICENSE-BOOKS.txt.
+
+3. Обкладинки (public/covers/*, images/cover.jpg в EPUB) — CC BY-SA 4.0.
+   Шрифт Literata (assets/fonts/) — SIL Open Font License 1.1, див. assets/fonts/OFL.txt.
+   Знак «Читанки» (assets/logo/) — знак проєкту; використовується для позначення
+   каталогу «Читанки».

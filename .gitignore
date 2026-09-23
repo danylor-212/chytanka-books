@@ -1,0 +1,6 @@
+.venv/
+.cache/
+public/
+build-report.json
+__pycache__/
+*.pyc
