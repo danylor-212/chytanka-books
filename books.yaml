@@ -42,13 +42,13 @@
 
 site:
   title: "Читанка — Книжки"
-  subtitle: "Українська класика в суспільному надбанні для читалки «Читанка»"
+  subtitle: "Класика в суспільному надбанні — українською та англійською — для читалки «Читанка»"
   base_url: "https://danylor-212.github.io/chytanka-books/"
   author: "Читанка"
   page_size: 50   # у chytanka-main MAX_OPDS_FEED_ENTRIES = 50 — більше на сторінку не можна
   # Дата останньої зміни конвеєра. <updated> у фіді та dcterms:modified в EPUB =
   # max(ця дата, час ревізії на Вікіджерелах). Підніміть її, коли змінюєте обробку.
-  pipeline_date: "2026-09-23T00:00:00Z"
+  pipeline_date: "2026-09-25T00:00:00Z"
 
 books:
   - slug: lesia-ukrainka-lisova-pisnia

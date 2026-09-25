@@ -354,13 +354,13 @@ def clean_content_doc(root, *, strip_notes: bool, strip_images: bool, keep_marke
 
 # --------------------------------------------------------------------------- generated pages
 
-def cover_xhtml(title: str) -> bytes:
+def cover_xhtml(title: str, lang: str = "uk", img_src: str = "images/cover.jpg") -> bytes:
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="uk" lang="uk">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{lang}" lang="{lang}">
 <head><meta charset="UTF-8"/><title>{esc(title)}</title>
 <style>html,body{{margin:0;padding:0;text-align:center}} img{{max-width:100%;max-height:100%}}</style></head>
-<body epub:type="cover"><div class="cover"><img src="images/cover.jpg" alt="{esc(title)}"/></div></body>
+<body epub:type="cover"><div class="cover"><img src="{esc(img_src)}" alt="{esc(title)}"/></div></body>
 </html>
 """.encode()
 

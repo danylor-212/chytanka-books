@@ -33,10 +33,25 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s tests -v
 
+      - name: Standard Ebooks toolset (se build)
+        # English books are built from github.com/standardebooks source with SE's own tool;
+        # standardebooks.org download URLs are never used.
+        run: pip install standardebooks
+
+      - name: Restore English build cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ws-cache/en
+          key: en-books-${{ hashFiles('books-en.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            en-books-${{ hashFiles('books-en.yaml') }}-
+            en-books-
+
       - name: Build EPUBs + OPDS feed
         # Fetches fresh exports from ws-export.wmcloud.org (polite: 2 s between books).
         # Exits non-zero if any EPUB fails the structural checks.
-        run: python build.py --cache "$RUNNER_TEMP/ws-cache"
+        # --refresh-en: `git ls-remote` every SE repo and rebuild only books whose source changed.
+        run: python build.py --cache "$RUNNER_TEMP/ws-cache" --refresh-en
 
       - uses: actions/setup-java@v4
         with:

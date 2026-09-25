@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><id>mixed</id><title>mixed</title><updated>2026-01-01T00:00:00Z</updated>
+<entry><id>sub</id><title>Sub-feed inside a mixed feed</title><updated>2026-01-01T00:00:00Z</updated><link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="https://example.test/cat/opds/uk/index.xml"/></entry>
+<entry><id>nioba</id><title>Ніоба</title><author><name>Ольга Кобилянська</name></author><updated>2026-01-01T00:00:00Z</updated><link rel="http://opds-spec.org/image" type="image/jpeg" href="https://example.test/cat/c.jpg"/><link rel="alternate" type="text/html" href="https://x.test/"/><link rel="http://opds-spec.org/acquisition/open-access" type="application/epub+zip" href="https://example.test/cat/books/nioba.epub"/></entry>
+</feed>

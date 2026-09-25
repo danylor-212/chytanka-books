@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>root</id><title>Root</title><updated>2026-01-01T00:00:00Z</updated>
+  <link rel="self" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="https://example.test/cat/opds/index.xml"/>
+  <entry><id>uk</id><title>Українська</title><updated>2026-01-01T00:00:00Z</updated>
+    <content type="text">nav via rel=subsection + kind=navigation</content>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="https://example.test/cat/opds/uk/index.xml"/></entry>
+  <entry><id>new</id><title>New (acquisition, rel=sort/new)</title><updated>2026-01-01T00:00:00Z</updated>
+    <link rel="http://opds-spec.org/sort/new" type="application/atom+xml;profile=opds-catalog;kind=acquisition" href="https://example.test/cat/opds/new.xml"/></entry>
+  <entry><id>mixed</id><title>Mixed feed</title><updated>2026-01-01T00:00:00Z</updated>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=acquisition" href="https://example.test/cat/opds/mixed.xml"/></entry>
+</feed>

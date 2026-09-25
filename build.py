@@ -31,8 +31,10 @@ from pathlib import Path
 import yaml
 
 from chytanka_books import cover as cov
+from chytanka_books import english
+from chytanka_books.catalogue import build_catalogue, landing_html
 from chytanka_books.epub import process_epub, ws_url
-from chytanka_books.site import build_feeds, human_size, landing_html, licence_txt, normalize_book, sort_books, typographic_apostrophes
+from chytanka_books.site import human_size, licence_txt, normalize_book, sort_books, typographic_apostrophes
 from chytanka_books.validate import validate_epub
 
 ROOT = Path(__file__).resolve().parent
@@ -105,6 +107,20 @@ def make_cover(book: dict):
                             edition_line=edition_line(book), fonts_dir=FONTS, logo_png=MARK)
 
 
+def make_cover_en(book: dict):
+    y = book.get("published")
+    tr = book.get("translator")
+    if tr and not str(tr).startswith("anonymous"):
+        line = f"Translated by {tr}"
+    elif y is not None:
+        line = f"{-y} BC" if y < 0 else str(y)
+    else:
+        line = None
+    return cov.render_cover(title=book.get("cover_title") or book["title"], author=book["author"],
+                            subtitle=book.get("subject") if book.get("category") == "non-fiction" else None,
+                            edition_line=line, fonts_dir=FONTS, logo_png=MARK, brand_line="Chytanka · public domain")
+
+
 def write_site_assets(out: Path) -> None:
     from PIL import Image
 
@@ -122,14 +138,25 @@ def catalogue_md(site: dict, rows: list[dict]) -> str:
         g = r.get("genre") or "Інше"
         return (GENRE_ORDER.index(g) if g in GENRE_ORDER else 99, uk_key(surname(r["author"])), uk_key(r["title"]))
 
-    rows = sorted(rows, key=key)
+    all_rows = rows
+    rows = sorted([r for r in rows if r.get("lang") != "en"], key=key)
+    en_rows = sorted([r for r in all_rows if r.get("lang") == "en"],
+                     key=lambda r: (r.get("category") != "fiction", (r.get("author_sort") or r["author"]).casefold(), r["title"]))
     pub = [r for r in rows if r["release_ready"]]
+    pub_en = [r for r in en_rows if r["release_ready"]]
+    n_fic = sum(1 for r in pub_en if r.get("category") == "fiction")
+    size_uk = sum(r["size_out"] for r in pub)
+    size_en = sum(r["size_out"] for r in pub_en)
     lines = [f"# {site['title']} — каталог", "",
-             f"Згенеровано `build.py` {datetime.now(timezone.utc):%Y-%m-%d}. Опубліковано: **{len(pub)}**, "
-             f"відкладено (hold / не пройшли перевірку): **{len(rows) - len(pub)}**. "
-             f"Загальний обсяг опублікованих EPUB: **{human_size(sum(r['size_out'] for r in pub))}**.", "",
+             f"Згенеровано `build.py` {datetime.now(timezone.utc):%Y-%m-%d}.", "",
+             f"- **Українська:** опубліковано **{len(pub)}**, відкладено **{len(rows) - len(pub)}**, {human_size(size_uk)}.",
+             f"- **English:** опубліковано **{len(pub_en)}** ({n_fic} fiction, {len(pub_en) - n_fic} non-fiction), "
+             f"відкладено **{len(en_rows) - len(pub_en)}**, {human_size(size_en)}.",
+             f"- **Разом:** {len(pub) + len(pub_en)} книжок, **{human_size(size_uk + size_en)}**.", "",
+             "OPDS: `opds/index.xml` → Українська / English / Усі книжки → жанр або автор → книжки.", "",
              "Виноски: «прибрано» — редакторські (US-only або strip_editorial), «авт.» — збережені авторські, "
-             "«у тексті» — виноски видань поза NY, що лишилися без змін (юридично PD).", ""]
+             "«у тексті» — виноски видань поза NY, що лишилися без змін (юридично PD).", "",
+             "# Українська"]
     genre = None
     for r in rows:
         g = r.get("genre") or "Інше"
@@ -165,12 +192,34 @@ def catalogue_md(site: dict, rows: list[dict]) -> str:
     dropped = [(r["title"], d) for r in rows for d in r["chapters_dropped"]]
     if dropped:
         lines += ["", "## Вилучені сторінки (не належать до твору)", ""] + [f"- «{t}»: {d}" for t, d in dropped]
+    if en_rows:
+        lines += ["", "# English", "",
+                  "Джерело: Standard Ebooks (CC0; зібрано з їхніх GitHub-репозиторіїв інструментом `se build`) або, "
+                  "де SE немає ключового твору, Project Gutenberg (ліцензію PG збережено у файлі). Зміни «Читанки»: "
+                  "обкладинка «Читанки», сторінка «About this edition», власний dc:identifier. Автори й перекладачі — †<1954."]
+        cat_ = None
+        for r in en_rows:
+            if r.get("category") != cat_:
+                cat_ = r.get("category")
+                lines += ["", f"## {'Fiction' if cat_ == 'fiction' else 'Non-fiction'}", "",
+                          "| Author | Title | Subject | Translator | Source | Size | Status |", "|---|---|---|---|---|---|---|"]
+            tr = r.get("translator") or ""
+            if tr and r.get("translator_died"):
+                tr += f" (†{r['translator_died']})"
+            status = "✅" if r["release_ready"] else "⏸ " + "; ".join(r.get("not_ready_reasons") or [])[:160]
+            lines.append(f"| {r['author']} (†{r.get('author_died')}) | {r['title']} | {r.get('subject') or ''} | {tr} | "
+                         f"{r.get('origin') or ''} | {human_size(r.get('size_out') or 0)} | {status} |")
     return "\n".join(lines) + "\n"
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(ROOT / "books.yaml"))
+    ap.add_argument("--config-en", default=str(ROOT / "books-en.yaml"))
+    ap.add_argument("--refresh-en", action="store_true",
+                    help="check Standard Ebooks repos for new commits (git ls-remote) and rebuild changed books")
+    ap.add_argument("--no-en", action="store_true", help="skip English books")
+    ap.add_argument("--preview-en", help="contact sheet of the English covers")
     ap.add_argument("--out", default=str(ROOT / "public"))
     ap.add_argument("--cache", default=os.environ.get("CHYTANKA_CACHE", str(ROOT / ".cache")))
     ap.add_argument("--refresh", action="store_true", help="re-download from WS Export / API")
@@ -254,10 +303,75 @@ def main() -> int:
         published.append({**book, "_size": len(epub), "_updated": updated, "_source_url": src_url, "_revid": revid})
 
     published = sort_books(published)
-    for rel, xml in build_feeds(site, published, page_size).items():
+    for b in published:
+        b["_lang"] = "uk"
+
+    # ---------------- English
+    published_en, cover_imgs_en = [], []
+    if not args.no_en and Path(args.config_en).exists():
+        cfg_en = yaml.safe_load(Path(args.config_en).read_text(encoding="utf-8"))
+        en_cache = cache / "en"
+        fmt = "%Y-%m-%dT%H:%M:%SZ"
+        pipeline = datetime.strptime(site.get("pipeline_date", "2026-01-01T00:00:00Z"), fmt).replace(tzinfo=timezone.utc)
+        from concurrent.futures import ThreadPoolExecutor
+
+        todo = [normalize_book(b) for b in cfg_en["books"] if not args.only or b["slug"] in args.only]
+        # clone + `se build` is slow (~10–20 s per book): run up to 4 in parallel, then process in order
+        pool = ThreadPoolExecutor(max_workers=int(os.environ.get("SE_JOBS", "4")))
+        se_jobs = {b["slug"]: pool.submit(english.fetch_se, b["se"], en_cache, args.refresh_en)
+                   for b in todo if b.get("se")}
+        for book in todo:
+            print(f"== en:{book['slug']}")
+            commit = None
+            try:
+                if book.get("se"):
+                    raw, commit = se_jobs[book["slug"]].result()
+                    src_url = "https://standardebooks.org/ebooks/" + book["se"].replace("_", "/")
+                else:
+                    raw = english.fetch_pg(int(book["gutenberg"]), en_cache, UA, refresh=False)
+                    src_url = f"https://www.gutenberg.org/ebooks/{book['gutenberg']}"
+            except Exception as e:  # noqa: BLE001
+                print(f"   NOT READY: fetch/build failed: {e}")
+                report_rows.append({"slug": book["slug"], "title": book["title"], "author": book["author"], "lang": "en",
+                                    "release_ready": False, "not_ready_reasons": [f"fetch failed: {e}"]})
+                failed = True
+                continue
+            img = make_cover_en(book)
+            cover_imgs_en.append((book["slug"], img))
+            epub, rep = english.process_en(raw, book, cover_jpeg=cov.jpeg_bytes(img, (600, 900)), source_url=src_url,
+                                           commit=commit, site_url=site["base_url"], modified=pipeline)
+            errs = validate_epub(epub, lang="en")
+            if errs:
+                rep.block("validation: " + "; ".join(errs[:10]))
+            if book.get("hold"):
+                rep.block(f"held in books-en.yaml: {book['hold']}")
+            print(f"   {human_size(rep.size_raw)} -> {human_size(rep.size_out)}; largest xhtml {human_size(rep.largest_xhtml)}; "
+                  f"fonts -{len(rep.fonts_removed)}; old cover removed: {bool(rep.images_removed)}; "
+                  f"release-ready: {'YES' if rep.release_ready else 'NO'}")
+            for r in rep.not_ready_reasons:
+                print(f"   NOT READY: {r}")
+            row = {k: v for k, v in rep.__dict__.items()}
+            row.update(lang="en", title=book["title"], author=book["author"], source=src_url, commit=commit,
+                       category=book["category"], subject=book.get("subject"), translator=book.get("translator"),
+                       author_died=book.get("author_died"), translator_died=book.get("translator_died"),
+                       origin="Standard Ebooks" if book.get("se") else "Project Gutenberg", published=book.get("published"),
+                       author_sort=book.get("author_sort"))
+            report_rows.append(row)
+            if not rep.release_ready:
+                failed = failed or bool(errs)
+                continue
+            (out / "books" / f"{book['slug']}.epub").write_bytes(epub)
+            cov.save_jpeg(img, out / "covers" / f"{book['slug']}.jpg", (200, 300), quality=85)
+            cov.save_jpeg(img, out / "covers" / f"{book['slug']}-600.jpg", (600, 900), quality=85)
+            published_en.append({**book, "_lang": "en", "_size": len(epub), "_updated": pipeline, "_source_url": src_url,
+                                 "_commit": commit})
+        pool.shutdown()
+
+    for rel, xml in build_catalogue(site, published, published_en).items():
+        (out / rel).parent.mkdir(parents=True, exist_ok=True)
         (out / rel).write_text(xml, encoding="utf-8")
-    (out / "index.html").write_text(landing_html(site, published), encoding="utf-8")
-    (out / "LICENSE-BOOKS.txt").write_text(licence_txt(site, published), encoding="utf-8")
+    (out / "index.html").write_text(landing_html(site, published, published_en), encoding="utf-8")
+    (out / "LICENSE-BOOKS.txt").write_text(licence_txt(site, published, published_en), encoding="utf-8")
     write_site_assets(out)
 
     rp = Path(args.report) if args.report else out.parent / "build-report.json"
@@ -272,7 +386,13 @@ def main() -> int:
         cov.contact_sheet(imgs, Path(args.preview), cols=10 if big else 3, cell=(240, 360) if big else (400, 600),
                           gap=24 if big else 40)
         print(f"preview: {args.preview}")
-    print(f"published {len(published)} book(s) -> {out}")
+    if args.preview_en and cover_imgs_en:
+        from chytanka_books.catalogue import en_key
+        order = sorted(cover_imgs_en, key=lambda t: next((en_key(b["author_sort"]) + en_key(b["title"]) for b in published_en
+                                                            if b["slug"] == t[0]), ""))
+        cov.contact_sheet([im for _, im in order], Path(args.preview_en), cols=12, cell=(200, 300), gap=20)
+        print(f"preview-en: {args.preview_en}")
+    print(f"published {len(published)} uk + {len(published_en)} en book(s) -> {out}")
     return 1 if failed else 0
 
 

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>uk</id><title>Authors</title><updated>2026-01-01T00:00:00Z</updated>
+  <link rel="up" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="https://example.test/cat/opds/index.xml"/>
+  <link rel="next" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="https://example.test/cat/opds/uk/index-2.xml"/>
+  <entry><id>a1</id><title>Франко Іван (2)</title><updated>2026-01-01T00:00:00Z</updated>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=acquisition" href="https://example.test/cat/opds/uk/franko.xml"/></entry>
+</feed>

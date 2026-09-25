@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>uk2</id><title>Authors 2</title><updated>2026-01-01T00:00:00Z</updated>
+  <link rel="previous" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="https://example.test/cat/opds/uk/index.xml"/>
+  <entry><id>a2</id><title>Українка Леся (1)</title><updated>2026-01-01T00:00:00Z</updated>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=acquisition" href="https://example.test/cat/opds/uk/lesia.xml"/></entry>
+</feed>

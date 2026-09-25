@@ -1,0 +1,308 @@
+# «Читанка — Книжки»: English-language classics (41 fiction + 88 non-fiction).
+#
+# Inspired by the Onyx Boox Palma/“Picco”-style preload of public-domain classics.
+# Selection rules (see README «English books»):
+#   * every author AND translator died before 1954 (safe under life+70 worldwide)
+#     and the text is public domain in the US (Standard Ebooks only publishes US-PD texts);
+#   * primary source: Standard Ebooks (standardebooks.org, CC0), built from their public
+#     GitHub source repositories with their own `se build` tool — we do NOT scrape
+#     standardebooks.org/ebooks/*/downloads (their robots.txt disallows AI agents there);
+#   * fallback: Project Gutenberg, only for key works SE does not have
+#     (`gutenberg: <ebook number>`), kept with the full PG licence inside;
+#   * every book gets a Chytanka typographic cover (SE cover paintings are only
+#     "thought to be PD in the US" and are ~0.6 MB each; see README) and an
+#     «About this edition» page saying it is derived from, not an official release of,
+#     Standard Ebooks / Project Gutenberg.
+#
+# Fields: slug, se: <github repo> | gutenberg: <id>, title, author, author_sort,
+#   author_died, translator(s) + translator_died, published (first publication),
+#   category: fiction | non-fiction, subject, summary.
+#
+# Considered and EXCLUDED (death-year rule): Sun Tzu «The Art of War» (Lionel Giles †1958),
+#   Rousseau «The Social Contract» (G. D. H. Cole †1959), Wittgenstein «Tractatus» (†1951, but
+#   C. K. Ogden †1957), Aristotle «Nicomachean Ethics» (F. H. Peters — death year unverifiable;
+#   replaced by «Politics», tr. William Ellis †1801), Pascal «Pensées» (PG edition carries
+#   T. S. Eliot's introduction, Eliot †1965), W. E. B. Du Bois (†1963), Helen Keller (†1968),
+#   Bertrand Russell (†1970), Einstein (†1955), Siegfried Sassoon (†1967), Max Beerbohm (†1956).
+
+site:
+  section_title: "English"
+
+books:
+  # ── Fiction (41) ───────────────────────────────────────────────────────────
+  - {slug: austen-pride-and-prejudice, se: jane-austen_pride-and-prejudice, title: "Pride and Prejudice", author: "Jane Austen", author_sort: "Austen, Jane", author_died: 1817, published: 1813, category: fiction, subject: "Novel",
+     summary: "Elizabeth Bennet and Mr. Darcy misjudge each other in the sharpest comedy of manners in English."}
+  - {slug: bronte-jane-eyre, se: charlotte-bronte_jane-eyre, title: "Jane Eyre", author: "Charlotte Brontë", author_sort: "Brontë, Charlotte", author_died: 1855, published: 1847, category: fiction, subject: "Novel",
+     summary: "An orphaned governess insists on her own worth and falls in love with the secretive Mr. Rochester."}
+  - {slug: bronte-wuthering-heights, se: emily-bronte_wuthering-heights, title: "Wuthering Heights", author: "Emily Brontë", author_sort: "Brontë, Emily", author_died: 1848, published: 1847, category: fiction, subject: "Novel",
+     summary: "Heathcliff and Catherine's destructive passion haunts two families on the Yorkshire moors."}
+  - {slug: shelley-frankenstein, se: mary-shelley_frankenstein, title: "Frankenstein", author: "Mary Shelley", author_sort: "Shelley, Mary", author_died: 1851, published: 1818, category: fiction, subject: "Novel",
+     summary: "A young scientist creates life and then abandons it — the founding novel of science fiction."}
+  - {slug: stoker-dracula, se: bram-stoker_dracula, title: "Dracula", author: "Bram Stoker", author_sort: "Stoker, Bram", author_died: 1912, published: 1897, category: fiction, subject: "Novel",
+     summary: "Letters and diaries trace the Transylvanian count's arrival in England and the hunt to stop him."}
+  - {slug: dickens-great-expectations, se: charles-dickens_great-expectations, title: "Great Expectations", author: "Charles Dickens", author_sort: "Dickens, Charles", author_died: 1870, published: 1861, category: fiction, subject: "Novel",
+     summary: "The orphan Pip is lifted into gentility by a secret benefactor and learns what he owes, and to whom."}
+  - {slug: dickens-a-tale-of-two-cities, se: charles-dickens_a-tale-of-two-cities, title: "A Tale of Two Cities", author: "Charles Dickens", author_sort: "Dickens, Charles", author_died: 1870, published: 1859, category: fiction, subject: "Novel",
+     summary: "London and Paris before and during the French Revolution, and a sacrifice at the guillotine."}
+  - {slug: dickens-a-christmas-carol, se: charles-dickens_a-christmas-carol, title: "A Christmas Carol", author: "Charles Dickens", author_sort: "Dickens, Charles", author_died: 1870, published: 1843, category: fiction, subject: "Novella",
+     summary: "Three spirits visit the miser Ebenezer Scrooge on Christmas Eve."}
+  - {slug: twain-huckleberry-finn, se: mark-twain_the-adventures-of-huckleberry-finn, title: "Adventures of Huckleberry Finn", author: "Mark Twain", author_sort: "Twain, Mark", author_died: 1910, published: 1884, category: fiction, subject: "Novel",
+     summary: "Huck and the runaway slave Jim drift down the Mississippi on a raft."}
+  - {slug: twain-tom-sawyer, se: mark-twain_the-adventures-of-tom-sawyer, title: "The Adventures of Tom Sawyer", author: "Mark Twain", author_sort: "Twain, Mark", author_died: 1910, published: 1876, category: fiction, subject: "Novel",
+     summary: "Boyhood mischief, treasure and a murder witnessed in a Mississippi river town."}
+  - {slug: melville-moby-dick, se: herman-melville_moby-dick, title: "Moby-Dick", author: "Herman Melville", author_sort: "Melville, Herman", author_died: 1891, published: 1851, category: fiction, subject: "Novel",
+     summary: "Captain Ahab hunts the white whale that took his leg; Ishmael tells the tale."}
+  - {slug: fitzgerald-the-great-gatsby, se: f-scott-fitzgerald_the-great-gatsby, title: "The Great Gatsby", author: "F. Scott Fitzgerald", author_sort: "Fitzgerald, F. Scott", author_died: 1940, published: 1925, category: fiction, subject: "Novel",
+     summary: "Jay Gatsby's lavish parties on Long Island hide a single longing for Daisy Buchanan."}
+  - {slug: wilde-the-picture-of-dorian-gray, se: oscar-wilde_the-picture-of-dorian-gray, title: "The Picture of Dorian Gray", author: "Oscar Wilde", author_sort: "Wilde, Oscar", author_died: 1900, published: 1890, category: fiction, subject: "Novel",
+     summary: "A portrait ages and decays while its beautiful subject stays young and grows corrupt."}
+  - {slug: doyle-the-adventures-of-sherlock-holmes, se: arthur-conan-doyle_the-adventures-of-sherlock-holmes, title: "The Adventures of Sherlock Holmes", author: "Arthur Conan Doyle", author_sort: "Doyle, Arthur Conan", author_died: 1930, published: 1892, category: fiction, subject: "Short stories",
+     summary: "Twelve cases of the consulting detective, from «A Scandal in Bohemia» to «The Speckled Band»."}
+  - {slug: doyle-the-hound-of-the-baskervilles, se: arthur-conan-doyle_the-hound-of-the-baskervilles, title: "The Hound of the Baskervilles", author: "Arthur Conan Doyle", author_sort: "Doyle, Arthur Conan", author_died: 1930, published: 1902, category: fiction, subject: "Novel",
+     summary: "A spectral hound on Dartmoor and the most famous of the Sherlock Holmes novels."}
+  - {slug: stevenson-treasure-island, se: robert-louis-stevenson_treasure-island, title: "Treasure Island", author: "Robert Louis Stevenson", author_sort: "Stevenson, Robert Louis", author_died: 1894, published: 1883, category: fiction, subject: "Novel",
+     summary: "Young Jim Hawkins, a treasure map and the one-legged pirate Long John Silver."}
+  - {slug: stevenson-dr-jekyll-and-mr-hyde, se: robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde, title: "The Strange Case of Dr. Jekyll and Mr. Hyde", author: "Robert Louis Stevenson", author_sort: "Stevenson, Robert Louis", author_died: 1894, published: 1886, category: fiction, subject: "Novella",
+     summary: "A respectable London doctor and the monstrous other self he releases."}
+  - {slug: wells-the-time-machine, se: h-g-wells_the-time-machine, title: "The Time Machine", author: "H. G. Wells", author_sort: "Wells, H. G.", author_died: 1946, published: 1895, category: fiction, subject: "Novella",
+     summary: "A Victorian inventor travels to the year 802,701 and finds humanity split in two."}
+  - {slug: wells-the-war-of-the-worlds, se: h-g-wells_the-war-of-the-worlds, title: "The War of the Worlds", author: "H. G. Wells", author_sort: "Wells, H. G.", author_died: 1946, published: 1898, category: fiction, subject: "Novel",
+     summary: "Martian cylinders land in Surrey and humanity is helpless against the invaders."}
+  - {slug: verne-around-the-world-in-eighty-days, se: jules-verne_around-the-world-in-eighty-days_george-makepeace-towle, title: "Around the World in Eighty Days", author: "Jules Verne", author_sort: "Verne, Jules", author_died: 1905, translator: "George Makepeace Towle", translator_died: 1893, published: 1873, category: fiction, subject: "Novel",
+     summary: "Phileas Fogg wagers his fortune that he can circle the globe in eighty days."}
+  - {slug: tolstoy-anna-karenina, se: leo-tolstoy_anna-karenina_constance-garnett, title: "Anna Karenina", author: "Leo Tolstoy", author_sort: "Tolstoy, Leo", author_died: 1910, translator: "Constance Garnett", translator_died: 1946, published: 1878, category: fiction, subject: "Novel",
+     summary: "Anna's love affair with Vronsky set against Levin's search for a meaningful life."}
+  - {slug: tolstoy-war-and-peace, se: leo-tolstoy_war-and-peace_louise-maude_aylmer-maude, title: "War and Peace", author: "Leo Tolstoy", author_sort: "Tolstoy, Leo", author_died: 1910, translator: "Louise and Aylmer Maude", translator_died: 1939, published: 1869, category: fiction, subject: "Novel",
+     summary: "Five aristocratic families through Napoleon's invasion of Russia."}
+  - {slug: dostoevsky-crime-and-punishment, se: fyodor-dostoevsky_crime-and-punishment_constance-garnett, title: "Crime and Punishment", author: "Fyodor Dostoevsky", author_sort: "Dostoevsky, Fyodor", author_died: 1881, translator: "Constance Garnett", translator_died: 1946, published: 1866, category: fiction, subject: "Novel",
+     summary: "A destitute student murders a pawnbroker to prove a theory, and cannot escape himself."}
+  - {slug: dostoevsky-the-brothers-karamazov, se: fyodor-dostoevsky_the-brothers-karamazov_constance-garnett, title: "The Brothers Karamazov", author: "Fyodor Dostoevsky", author_sort: "Dostoevsky, Fyodor", author_died: 1881, translator: "Constance Garnett", translator_died: 1946, published: 1880, category: fiction, subject: "Novel",
+     summary: "Three brothers, a murdered father, and Dostoevsky's great argument about faith and freedom."}
+  - {slug: carroll-alices-adventures-in-wonderland, se: lewis-carroll_alices-adventures-in-wonderland_john-tenniel, title: "Alice's Adventures in Wonderland", author: "Lewis Carroll", author_sort: "Carroll, Lewis", author_died: 1898, illustrator: "John Tenniel", illustrator_died: 1914, published: 1865, category: fiction, subject: "Children's",
+     summary: "Alice follows the White Rabbit down the rabbit hole."}
+  - {slug: grahame-the-wind-in-the-willows, se: kenneth-grahame_the-wind-in-the-willows, title: "The Wind in the Willows", author: "Kenneth Grahame", author_sort: "Grahame, Kenneth", author_died: 1932, published: 1908, category: fiction, subject: "Children's",
+     summary: "Mole, Rat, Badger and the incorrigible Mr. Toad along the riverbank."}
+  - {slug: montgomery-anne-of-green-gables, se: l-m-montgomery_anne-of-green-gables, title: "Anne of Green Gables", author: "L. M. Montgomery", author_sort: "Montgomery, L. M.", author_died: 1942, published: 1908, category: fiction, subject: "Novel",
+     summary: "A talkative red-haired orphan is sent by mistake to a brother and sister on Prince Edward Island."}
+  - {slug: alcott-little-women, se: louisa-may-alcott_little-women, title: "Little Women", author: "Louisa May Alcott", author_sort: "Alcott, Louisa May", author_died: 1888, published: 1868, category: fiction, subject: "Novel",
+     summary: "Meg, Jo, Beth and Amy March grow up in New England during the Civil War."}
+  - {slug: london-the-call-of-the-wild, se: jack-london_the-call-of-the-wild, title: "The Call of the Wild", author: "Jack London", author_sort: "London, Jack", author_died: 1916, published: 1903, category: fiction, subject: "Novella",
+     summary: "Buck, a stolen house dog, becomes a sled dog in the Klondike and answers the wild."}
+  - {slug: conrad-heart-of-darkness, se: joseph-conrad_heart-of-darkness, title: "Heart of Darkness", author: "Joseph Conrad", author_sort: "Conrad, Joseph", author_died: 1924, published: 1899, category: fiction, subject: "Novella",
+     summary: "Marlow's journey up the Congo River in search of the ivory trader Kurtz."}
+  - {slug: eliot-middlemarch, se: george-eliot_middlemarch, title: "Middlemarch", author: "George Eliot", author_sort: "Eliot, George", author_died: 1880, published: 1871, category: fiction, subject: "Novel",
+     summary: "Dorothea Brooke, Tertius Lydgate and a whole provincial town in the years before the Reform Act."}
+  - {slug: hardy-tess-of-the-durbervilles, se: thomas-hardy_tess-of-the-durbervilles, title: "Tess of the d'Urbervilles", author: "Thomas Hardy", author_sort: "Hardy, Thomas", author_died: 1928, published: 1891, category: fiction, subject: "Novel",
+     summary: "A poor country girl, a false aristocratic lineage and a society without mercy."}
+  - {slug: wharton-the-age-of-innocence, se: edith-wharton_the-age-of-innocence, title: "The Age of Innocence", author: "Edith Wharton", author_sort: "Wharton, Edith", author_died: 1937, published: 1920, category: fiction, subject: "Novel",
+     summary: "Old New York society, an engagement, and the countess who unsettles it."}
+  - {slug: woolf-mrs-dalloway, se: virginia-woolf_mrs-dalloway, title: "Mrs. Dalloway", author: "Virginia Woolf", author_sort: "Woolf, Virginia", author_died: 1941, published: 1925, category: fiction, subject: "Novel",
+     summary: "One June day in London as Clarissa Dalloway prepares for her party."}
+  - {slug: joyce-dubliners, se: james-joyce_dubliners, title: "Dubliners", author: "James Joyce", author_sort: "Joyce, James", author_died: 1941, published: 1914, category: fiction, subject: "Short stories",
+     summary: "Fifteen stories of Dublin life, ending with «The Dead»."}
+  - {slug: hawthorne-the-scarlet-letter, se: nathaniel-hawthorne_the-scarlet-letter, title: "The Scarlet Letter", author: "Nathaniel Hawthorne", author_sort: "Hawthorne, Nathaniel", author_died: 1864, published: 1850, category: fiction, subject: "Novel",
+     summary: "Hester Prynne wears the scarlet A in Puritan Boston and keeps her lover's secret."}
+  - {slug: poe-short-fiction, se: edgar-allan-poe_short-fiction, title: "Short Fiction", author: "Edgar Allan Poe", author_sort: "Poe, Edgar Allan", author_died: 1849, published: 1845, category: fiction, subject: "Short stories",
+     summary: "The tales of mystery and imagination — «The Tell-Tale Heart», «The Fall of the House of Usher», Dupin's cases."}
+  - {slug: dumas-the-count-of-monte-cristo, se: alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall, title: "The Count of Monte Cristo", author: "Alexandre Dumas", author_sort: "Dumas, Alexandre", author_died: 1870, translator: "anonymous (Chapman and Hall, 1846)", translator_died: null, published: 1844, category: fiction, subject: "Novel",
+     summary: "Edmond Dantès escapes the Château d'If and takes a patient, terrible revenge."}
+  - {slug: cervantes-don-quixote, se: miguel-de-cervantes-saavedra_don-quixote_john-ormsby, title: "Don Quixote", author: "Miguel de Cervantes", author_sort: "Cervantes, Miguel de", author_died: 1616, translator: "John Ormsby", translator_died: 1895, published: 1605, category: fiction, subject: "Novel",
+     summary: "The knight of La Mancha and his squire Sancho Panza ride out against giants that are windmills."}
+  - {slug: chekhov-short-fiction, se: anton-chekhov_short-fiction_constance-garnett, title: "Short Fiction", author: "Anton Chekhov", author_sort: "Chekhov, Anton", author_died: 1904, translator: "Constance Garnett", translator_died: 1946, published: 1886, category: fiction, subject: "Short stories",
+     summary: "Chekhov's stories in Constance Garnett's classic translation, including «The Lady with the Dog»."}
+  - {slug: kipling-the-jungle-book, se: rudyard-kipling_the-jungle-book, title: "The Jungle Book", author: "Rudyard Kipling", author_sort: "Kipling, Rudyard", author_died: 1936, published: 1894, category: fiction, subject: "Short stories",
+     summary: "Mowgli raised by wolves, Rikki-Tikki-Tavi and the other jungle stories."}
+
+  # ── Non-fiction: philosophy (23) ───────────────────────────────────────────
+  - {slug: marcus-aurelius-meditations, se: marcus-aurelius_meditations_george-long, title: "Meditations", author: "Marcus Aurelius", author_sort: "Marcus Aurelius", author_died: 180, translator: "George Long", translator_died: 1879, published: 180, category: non-fiction, subject: "Philosophy",
+     summary: "The Stoic emperor's private notes to himself on duty, mortality and calm."}
+  - {slug: seneca-dialogues, se: seneca_dialogues_aubrey-stewart, title: "Dialogues", author: "Seneca", author_sort: "Seneca", author_died: 65, translator: "Aubrey Stewart", translator_died: 1918, published: 65, category: non-fiction, subject: "Philosophy",
+     summary: "Stoic essays on anger, the shortness of life, providence and the happy life."}
+  - {slug: epictetus-discourses, se: epictetus_discourses_george-long, title: "Discourses", author: "Epictetus", author_sort: "Epictetus", author_died: 135, translator: "George Long", translator_died: 1879, published: 108, category: non-fiction, subject: "Philosophy",
+     summary: "The former slave's lectures on what is and is not in our power."}
+  - {slug: plato-dialogues, se: plato_dialogues_benjamin-jowett, title: "Dialogues", author: "Plato", author_sort: "Plato", author_died: -348, translator: "Benjamin Jowett", translator_died: 1893, published: -380, category: non-fiction, subject: "Philosophy",
+     summary: "Socrates in conversation — the Apology, Crito, Phaedo, Symposium, Republic and more."}
+  - {slug: aristotle-politics, gutenberg: 6762, title: "Politics", author: "Aristotle", author_sort: "Aristotle", author_died: -322, translator: "William Ellis", translator_died: 1801, published: -350, category: non-fiction, subject: "Philosophy",
+     summary: "Aristotle on the city-state, citizenship, constitutions and the best form of government."}
+  - {slug: boethius-the-consolation-of-philosophy, se: boethius_the-consolation-of-philosophy_h-r-james, title: "The Consolation of Philosophy", author: "Boethius", author_sort: "Boethius", author_died: 524, translator: "H. R. James", translator_died: 1931, published: 524, category: non-fiction, subject: "Philosophy",
+     summary: "Written in prison awaiting execution: Lady Philosophy on fortune, happiness and providence."}
+  - {slug: confucius-analects, se: confucius_analects_james-legge, title: "Analects", author: "Confucius", author_sort: "Confucius", author_died: -479, translator: "James Legge", translator_died: 1897, published: -475, category: non-fiction, subject: "Philosophy",
+     summary: "The sayings of Confucius on virtue, learning, ritual and government."}
+  - {slug: laozi-tao-te-ching, se: laozi_tao-te-ching_james-legge, title: "Tao Te Ching", author: "Laozi", author_sort: "Laozi", author_died: -531, translator: "James Legge", translator_died: 1897, published: -400, category: non-fiction, subject: "Philosophy",
+     summary: "Eighty-one short chapters on the Way and its virtue."}
+  - {slug: diogenes-laertius-lives-of-eminent-philosophers, se: diogenes-laertius_the-lives-and-opinions-of-eminent-philosophers_c-d-yonge, title: "The Lives and Opinions of Eminent Philosophers", author: "Diogenes Laërtius", author_sort: "Diogenes Laërtius", author_died: 250, translator: "C. D. Yonge", translator_died: 1891, published: 230, category: non-fiction, subject: "Philosophy",
+     summary: "Anecdotes, sayings and doctrines of the Greek philosophers from Thales to Epicurus."}
+  - {slug: cicero-tusculan-disputations, se: cicero_tusculan-disputations_c-d-yonge, title: "Tusculan Disputations", author: "Cicero", author_sort: "Cicero", author_died: -43, translator: "C. D. Yonge", translator_died: 1891, published: -45, category: non-fiction, subject: "Philosophy",
+     summary: "Cicero on death, pain, grief and whether virtue is enough for a happy life."}
+  - {slug: descartes-philosophical-works, se: rene-descartes_philosophical-works_john-veitch, title: "Philosophical Works", author: "René Descartes", author_sort: "Descartes, René", author_died: 1650, translator: "John Veitch", translator_died: 1894, published: 1637, category: non-fiction, subject: "Philosophy",
+     summary: "The Discourse on Method and the Meditations: «I think, therefore I am»."}
+  - {slug: spinoza-ethics, gutenberg: 3800, title: "Ethics", author: "Baruch Spinoza", author_sort: "Spinoza, Baruch", author_died: 1677, translator: "R. H. M. Elwes", translator_died: 1892, published: 1677, category: non-fiction, subject: "Philosophy",
+     summary: "God, nature, the emotions and human freedom, demonstrated in geometrical order."}
+  - {slug: montaigne-essays, gutenberg: 3600, title: "Essays", author: "Michel de Montaigne", author_sort: "Montaigne, Michel de", author_died: 1592, translator: "Charles Cotton (ed. W. Carew Hazlitt)", translator_died: 1913, published: 1580, category: non-fiction, subject: "Essays",
+     summary: "The book that invented the essay: Montaigne examining himself and everything else."}
+  - {slug: hobbes-leviathan, se: thomas-hobbes_leviathan, title: "Leviathan", author: "Thomas Hobbes", author_sort: "Hobbes, Thomas", author_died: 1679, published: 1651, category: non-fiction, subject: "Philosophy",
+     summary: "Life without government is «nasty, brutish, and short» — the case for the sovereign state."}
+  - {slug: hume-an-enquiry-concerning-human-understanding, se: david-hume_an-enquiry-concerning-human-understanding, title: "An Enquiry Concerning Human Understanding", author: "David Hume", author_sort: "Hume, David", author_died: 1776, published: 1748, category: non-fiction, subject: "Philosophy",
+     summary: "Hume on causation, custom, miracles and the limits of reason."}
+  - {slug: nietzsche-thus-spake-zarathustra, se: friedrich-nietzsche_thus-spake-zarathustra_thomas-common, title: "Thus Spake Zarathustra", author: "Friedrich Nietzsche", author_sort: "Nietzsche, Friedrich", author_died: 1900, translator: "Thomas Common", translator_died: 1919, published: 1883, category: non-fiction, subject: "Philosophy",
+     summary: "The prophet Zarathustra descends from the mountain to teach the Übermensch."}
+  - {slug: nietzsche-beyond-good-and-evil, se: friedrich-nietzsche_beyond-good-and-evil_helen-zimmern, title: "Beyond Good and Evil", author: "Friedrich Nietzsche", author_sort: "Nietzsche, Friedrich", author_died: 1900, translator: "Helen Zimmern", translator_died: 1934, published: 1886, category: non-fiction, subject: "Philosophy",
+     summary: "Nietzsche's attack on the prejudices of philosophers and on conventional morality."}
+  - {slug: james-pragmatism, se: william-james_pragmatism, title: "Pragmatism", author: "William James", author_sort: "James, William", author_died: 1910, published: 1907, category: non-fiction, subject: "Philosophy",
+     summary: "Lectures defining truth by its practical consequences."}
+  - {slug: james-the-varieties-of-religious-experience, se: william-james_the-varieties-of-religious-experience, title: "The Varieties of Religious Experience", author: "William James", author_sort: "James, William", author_died: 1910, published: 1902, category: non-fiction, subject: "Psychology",
+     summary: "A psychologist's classic study of conversion, saintliness and mysticism."}
+  - {slug: emerson-essays, se: ralph-waldo-emerson_essays, title: "Essays", author: "Ralph Waldo Emerson", author_sort: "Emerson, Ralph Waldo", author_died: 1882, published: 1841, category: non-fiction, subject: "Essays",
+     summary: "«Self-Reliance», «The Over-Soul», «Nature» and the rest of Emerson's first and second series."}
+  - {slug: thoreau-walden, se: henry-david-thoreau_walden, title: "Walden", author: "Henry David Thoreau", author_sort: "Thoreau, Henry David", author_died: 1862, published: 1854, category: non-fiction, subject: "Philosophy",
+     summary: "Two years in a cabin by Walden Pond, living «deliberately»."}
+  - {slug: thoreau-essays, se: henry-david-thoreau_essays, title: "Essays", author: "Henry David Thoreau", author_sort: "Thoreau, Henry David", author_died: 1862, published: 1849, category: non-fiction, subject: "Essays",
+     summary: "«Civil Disobedience», «Walking», «Life Without Principle» and other essays."}
+  - {slug: chesterton-orthodoxy, se: g-k-chesterton_orthodoxy, title: "Orthodoxy", author: "G. K. Chesterton", author_sort: "Chesterton, G. K.", author_died: 1936, published: 1908, category: non-fiction, subject: "Philosophy",
+     summary: "Chesterton's witty account of how he came to Christian belief."}
+  - {slug: carlyle-sartor-resartus, se: thomas-carlyle_sartor-resartus, title: "Sartor Resartus", author: "Thomas Carlyle", author_sort: "Carlyle, Thomas", author_died: 1881, published: 1836, category: non-fiction, subject: "Philosophy",
+     summary: "The «philosophy of clothes» of an imaginary German professor — Carlyle's strangest book."}
+
+  # ── Non-fiction: politics & society (16) ───────────────────────────────────
+  - {slug: machiavelli-the-prince, se: niccolo-machiavelli_the-prince_w-k-marriott, title: "The Prince", author: "Niccolò Machiavelli", author_sort: "Machiavelli, Niccolò", author_died: 1527, translator: "W. K. Marriott", translator_died: 1927, published: 1532, category: non-fiction, subject: "Politics",
+     summary: "How princes gain and keep power — the founding text of political realism."}
+  - {slug: machiavelli-discourses-on-livy, se: niccolo-machiavelli_discourses-on-livy_ninian-hill-thomson, title: "Discourses on Livy", author: "Niccolò Machiavelli", author_sort: "Machiavelli, Niccolò", author_died: 1527, translator: "Ninian Hill Thomson", translator_died: 1921, published: 1531, category: non-fiction, subject: "Politics",
+     summary: "Machiavelli the republican: lessons from Rome on liberty and good government."}
+  - {slug: locke-two-treatises-of-government, se: john-locke_two-treatises-of-government, title: "Two Treatises of Government", author: "John Locke", author_sort: "Locke, John", author_died: 1704, published: 1689, category: non-fiction, subject: "Politics",
+     summary: "Natural rights, property and government by consent."}
+  - {slug: mill-on-liberty, se: john-stuart-mill_on-liberty, title: "On Liberty", author: "John Stuart Mill", author_sort: "Mill, John Stuart", author_died: 1873, published: 1859, category: non-fiction, subject: "Politics",
+     summary: "The harm principle and the case for freedom of thought and expression."}
+  - {slug: mill-the-subjection-of-women, se: john-stuart-mill_the-subjection-of-women, title: "The Subjection of Women", author: "John Stuart Mill", author_sort: "Mill, John Stuart", author_died: 1873, published: 1869, category: non-fiction, subject: "Politics",
+     summary: "Mill's argument for the full legal and social equality of women."}
+  - {slug: wollstonecraft-a-vindication-of-the-rights-of-woman, se: mary-wollstonecraft_a-vindication-of-the-rights-of-woman, title: "A Vindication of the Rights of Woman", author: "Mary Wollstonecraft", author_sort: "Wollstonecraft, Mary", author_died: 1797, published: 1792, category: non-fiction, subject: "Politics",
+     summary: "Women are not naturally inferior, only denied education — a founding work of feminism."}
+  - {slug: paine-the-rights-of-man, se: thomas-paine_the-rights-of-man, title: "Rights of Man", author: "Thomas Paine", author_sort: "Paine, Thomas", author_died: 1809, published: 1791, category: non-fiction, subject: "Politics",
+     summary: "Paine's defence of the French Revolution and of popular sovereignty against Burke."}
+  - {slug: paine-essays, se: thomas-paine_essays, title: "Essays", author: "Thomas Paine", author_sort: "Paine, Thomas", author_died: 1809, editor: "Moncure D. Conway", editor_died: 1907, published: 1776, category: non-fiction, subject: "Politics",
+     summary: "«Common Sense», «Agrarian Justice» and Paine's other political pamphlets."}
+  - {slug: hamilton-madison-jay-the-federalist-papers, se: alexander-hamilton_john-jay_james-madison_the-federalist-papers, title: "The Federalist Papers", author: "Alexander Hamilton, James Madison, John Jay", author_sort: "Hamilton, Alexander", author_died: 1836, published: 1788, category: non-fiction, subject: "Politics",
+     summary: "Eighty-five essays arguing for ratification of the United States Constitution."}
+  - {slug: burke-reflections-on-the-revolution-in-france, se: edmund-burke_reflections-on-the-revolution-in-france, title: "Reflections on the Revolution in France", author: "Edmund Burke", author_sort: "Burke, Edmund", author_died: 1797, published: 1790, category: non-fiction, subject: "Politics",
+     summary: "Burke's warning against abstract revolution — the founding text of modern conservatism."}
+  - {slug: marx-engels-the-communist-manifesto, se: karl-marx_friedrich-engels_the-communist-manifesto_samuel-moore, title: "The Communist Manifesto", author: "Karl Marx, Friedrich Engels", author_sort: "Marx, Karl", author_died: 1895, translator: "Samuel Moore", translator_died: 1911, published: 1848, category: non-fiction, subject: "Politics",
+     summary: "«A spectre is haunting Europe» — the short pamphlet that changed the twentieth century."}
+  - {slug: kropotkin-mutual-aid, se: peter-kropotkin_mutual-aid, title: "Mutual Aid", author: "Peter Kropotkin", author_sort: "Kropotkin, Peter", author_died: 1921, published: 1902, category: non-fiction, subject: "Society",
+     summary: "Cooperation, not only competition, as a factor of evolution — from animals to medieval guilds."}
+  - {slug: gilman-women-and-economics, se: charlotte-perkins-gilman_women-and-economics, title: "Women and Economics", author: "Charlotte Perkins Gilman", author_sort: "Gilman, Charlotte Perkins", author_died: 1935, published: 1898, category: non-fiction, subject: "Society",
+     summary: "Why women's economic dependence on men distorts society, and what to do about it."}
+  - {slug: dewey-democracy-and-education, se: john-dewey_democracy-and-education, title: "Democracy and Education", author: "John Dewey", author_sort: "Dewey, John", author_died: 1952, published: 1916, category: non-fiction, subject: "Education",
+     summary: "Education as growth and as the lifeblood of a democratic society."}
+  - {slug: arnold-culture-and-anarchy, se: matthew-arnold_culture-and-anarchy, title: "Culture and Anarchy", author: "Matthew Arnold", author_sort: "Arnold, Matthew", author_died: 1888, published: 1869, category: non-fiction, subject: "Society",
+     summary: "«Sweetness and light»: culture as the pursuit of our total perfection."}
+  - {slug: riis-how-the-other-half-lives, se: jacob-riis_how-the-other-half-lives, title: "How the Other Half Lives", author: "Jacob Riis", author_sort: "Riis, Jacob", author_died: 1914, published: 1890, strip_images: true, strip_images_reason: "engravings include work by Victor Perard (†1957)", category: non-fiction, subject: "Society",
+     summary: "A reporter's exposé of the tenements of New York's Lower East Side."}
+
+  # ── Non-fiction: economics (7) ─────────────────────────────────────────────
+  - {slug: smith-the-wealth-of-nations, se: adam-smith_the-wealth-of-nations, title: "The Wealth of Nations", author: "Adam Smith", author_sort: "Smith, Adam", author_died: 1790, published: 1776, category: non-fiction, subject: "Economics",
+     summary: "The division of labour, the invisible hand and the foundations of economics."}
+  - {slug: smith-the-theory-of-moral-sentiments, se: adam-smith_the-theory-of-moral-sentiments, title: "The Theory of Moral Sentiments", author: "Adam Smith", author_sort: "Smith, Adam", author_died: 1790, published: 1759, category: non-fiction, subject: "Philosophy",
+     summary: "Sympathy and the impartial spectator — Smith's moral philosophy."}
+  - {slug: veblen-the-theory-of-the-leisure-class, se: thorstein-veblen_the-theory-of-the-leisure-class, title: "The Theory of the Leisure Class", author: "Thorstein Veblen", author_sort: "Veblen, Thorstein", author_died: 1929, published: 1899, category: non-fiction, subject: "Economics",
+     summary: "Conspicuous consumption and conspicuous leisure as badges of status."}
+  - {slug: george-progress-and-poverty, se: henry-george_progress-and-poverty, title: "Progress and Poverty", author: "Henry George", author_sort: "George, Henry", author_died: 1897, published: 1879, category: non-fiction, subject: "Economics",
+     summary: "Why poverty deepens as wealth grows — and the case for a single tax on land."}
+  - {slug: keynes-the-economic-consequences-of-the-peace, se: john-maynard-keynes_the-economic-consequences-of-the-peace, title: "The Economic Consequences of the Peace", author: "John Maynard Keynes", author_sort: "Keynes, John Maynard", author_died: 1946, published: 1919, category: non-fiction, subject: "Economics",
+     summary: "Keynes's prophetic attack on the Treaty of Versailles."}
+  - {slug: ruskin-unto-this-last, se: john-ruskin_unto-this-last, title: "Unto This Last", author: "John Ruskin", author_sort: "Ruskin, John", author_died: 1900, published: 1862, category: non-fiction, subject: "Economics",
+     summary: "«There is no wealth but life» — Ruskin's moral critique of political economy."}
+  - {slug: kropotkin-the-conquest-of-bread, se: peter-kropotkin_the-conquest-of-bread_chapman-and-hall, title: "The Conquest of Bread", author: "Peter Kropotkin", author_sort: "Kropotkin, Peter", author_died: 1921, translator: "anonymous (Chapman and Hall, 1906)", translator_died: null, published: 1892, category: non-fiction, subject: "Economics",
+     summary: "How a society could provide well-being for all without property or the state."}
+
+  # ── Non-fiction: history (9) ───────────────────────────────────────────────
+  - {slug: thucydides-history-of-the-peloponnesian-war, se: thucydides_history-of-the-peloponnesian-war_richard-crawley, title: "History of the Peloponnesian War", author: "Thucydides", author_sort: "Thucydides", author_died: -400, translator: "Richard Crawley", translator_died: 1893, published: -400, category: non-fiction, subject: "History",
+     summary: "Athens against Sparta, told by an Athenian general — history as analysis of power."}
+  - {slug: herodotus-histories, se: herodotus_histories_g-c-macaulay, title: "Histories", author: "Herodotus", author_sort: "Herodotus", author_died: -425, translator: "G. C. Macaulay", translator_died: 1915, published: -430, category: non-fiction, subject: "History",
+     summary: "The Persian Wars and the wonders of the known world, by the «father of history»."}
+  - {slug: caesar-commentaries-on-the-gallic-war, se: julius-caesar_commentaries-on-the-gallic-war_w-a-mcdevitte_w-s-bohn, title: "Commentaries on the Gallic War", author: "Julius Caesar", author_sort: "Caesar, Julius", author_died: -44, translator: "W. A. McDevitte and W. S. Bohn", translator_died: 1909, published: -50, category: non-fiction, subject: "History",
+     summary: "Caesar's own account of his conquest of Gaul."}
+  - {slug: suetonius-the-lives-of-the-caesars, se: suetonius_the-lives-of-the-caesars_j-c-rolfe, title: "The Lives of the Caesars", author: "Suetonius", author_sort: "Suetonius", author_died: 122, translator: "J. C. Rolfe", translator_died: 1943, published: 121, category: non-fiction, subject: "History",
+     summary: "Twelve Caesars from Julius to Domitian, with all the gossip."}
+  - {slug: procopius-the-secret-history, se: procopius_the-secret-history_richard-atwater, title: "The Secret History", author: "Procopius", author_sort: "Procopius", author_died: 570, translator: "Richard Atwater", translator_died: 1948, published: 550, category: non-fiction, subject: "History",
+     summary: "The scandalous hidden account of Justinian and Theodora by their own court historian."}
+  - {slug: gibbon-the-decline-and-fall-of-the-roman-empire, se: edward-gibbon_the-history-of-the-decline-and-fall-of-the-roman-empire, title: "The History of the Decline and Fall of the Roman Empire", author: "Edward Gibbon", author_sort: "Gibbon, Edward", author_died: 1794, published: 1776, strip_images: true, strip_images_reason: "maps by G. B. King — death year not verifiable", category: non-fiction, subject: "History",
+     summary: "Thirteen centuries from the Antonines to the fall of Constantinople, in Gibbon's magnificent prose."}
+  - {slug: johnson-a-general-history-of-the-pirates, se: captain-charles-johnson_a-general-history-of-the-pirates, title: "A General History of the Pirates", author: "Captain Charles Johnson", author_sort: "Johnson, Charles", author_died: 1750, published: 1724, category: non-fiction, subject: "History",
+     summary: "Blackbeard, Anne Bonny, Mary Read and the golden age of piracy, as told in 1724."}
+  - {slug: lawrence-seven-pillars-of-wisdom, se: t-e-lawrence_seven-pillars-of-wisdom, title: "Seven Pillars of Wisdom", author: "T. E. Lawrence", author_sort: "Lawrence, T. E.", author_died: 1935, published: 1926, strip_images: true, strip_images_reason: "141 portraits/drawings by Kennington (†1960), Augustus John (†1961), W. Roberts (†1980) and others — not PD outside the US", category: non-fiction, subject: "History",
+     summary: "Lawrence of Arabia's account of the Arab Revolt of 1916–18."}
+  - {slug: roosevelt-the-rough-riders, se: theodore-roosevelt_the-rough-riders, title: "The Rough Riders", author: "Theodore Roosevelt", author_sort: "Roosevelt, Theodore", author_died: 1919, published: 1899, category: non-fiction, subject: "History",
+     summary: "Roosevelt's volunteer cavalry regiment in the Spanish–American War."}
+
+  # ── Non-fiction: memoir & autobiography (12) ───────────────────────────────
+  - {slug: franklin-autobiography, se: benjamin-franklin_the-autobiography-of-benjamin-franklin, title: "The Autobiography of Benjamin Franklin", author: "Benjamin Franklin", author_sort: "Franklin, Benjamin", author_died: 1790, published: 1791, category: non-fiction, subject: "Memoir",
+     summary: "From runaway printer's apprentice to scientist and statesman, with his plan for moral perfection."}
+  - {slug: douglass-narrative, se: frederick-douglass_narrative-of-the-life-of-frederick-douglass, title: "Narrative of the Life of Frederick Douglass", author: "Frederick Douglass", author_sort: "Douglass, Frederick", author_died: 1895, published: 1845, category: non-fiction, subject: "Memoir",
+     summary: "Douglass's own account of slavery, learning to read, and escape."}
+  - {slug: washington-up-from-slavery, se: booker-t-washington_up-from-slavery, title: "Up from Slavery", author: "Booker T. Washington", author_sort: "Washington, Booker T.", author_died: 1915, published: 1901, category: non-fiction, subject: "Memoir",
+     summary: "Born enslaved, he built the Tuskegee Institute."}
+  - {slug: grant-personal-memoirs, se: ulysses-s-grant_personal-memoirs-of-ulysses-s-grant, title: "Personal Memoirs of U. S. Grant", author: "Ulysses S. Grant", author_sort: "Grant, Ulysses S.", author_died: 1885, published: 1885, category: non-fiction, subject: "Memoir",
+     summary: "The Union commander's lucid memoir, finished days before his death."}
+  - {slug: mill-autobiography, se: john-stuart-mill_the-autobiography-of-john-stuart-mill, title: "Autobiography", author: "John Stuart Mill", author_sort: "Mill, John Stuart", author_died: 1873, published: 1873, category: non-fiction, subject: "Memoir",
+     summary: "A famous hothouse education, a mental crisis, and recovery through poetry."}
+  - {slug: equiano-the-interesting-narrative, se: olaudah-equiano_the-interesting-narrative-of-the-life-of-olaudah-equiano, title: "The Interesting Narrative of the Life of Olaudah Equiano", author: "Olaudah Equiano", author_sort: "Equiano, Olaudah", author_died: 1797, published: 1789, category: non-fiction, subject: "Memoir",
+     summary: "Kidnapped in Africa, enslaved, freed — a landmark of the abolitionist cause."}
+  - {slug: de-quincey-confessions-of-an-english-opium-eater, se: thomas-de-quincey_confessions-of-an-english-opium-eater, title: "Confessions of an English Opium-Eater", author: "Thomas De Quincey", author_sort: "De Quincey, Thomas", author_died: 1859, published: 1821, category: non-fiction, subject: "Memoir",
+     summary: "The pleasures and pains of opium, and a London youth of hunger and dreams."}
+  - {slug: kropotkin-memoirs-of-a-revolutionist, se: peter-kropotkin_memoirs-of-a-revolutionist, title: "Memoirs of a Revolutionist", author: "Peter Kropotkin", author_sort: "Kropotkin, Peter", author_died: 1921, published: 1899, category: non-fiction, subject: "Memoir",
+     summary: "A prince of the Russian court becomes geographer, prisoner and anarchist."}
+  - {slug: roosevelt-an-autobiography, se: theodore-roosevelt_an-autobiography, title: "An Autobiography", author: "Theodore Roosevelt", author_sort: "Roosevelt, Theodore", author_died: 1919, published: 1913, category: non-fiction, subject: "Memoir",
+     summary: "Ranching, police commissioner, the Navy and the presidency, in Roosevelt's own words."}
+  - {slug: babbage-passages-from-the-life-of-a-philosopher, se: charles-babbage_passages-from-the-life-of-a-philosopher, title: "Passages from the Life of a Philosopher", author: "Charles Babbage", author_sort: "Babbage, Charles", author_died: 1871, published: 1864, category: non-fiction, subject: "Memoir",
+     summary: "The inventor of the Analytical Engine on his machines, his feuds and street musicians."}
+  - {slug: davies-the-autobiography-of-a-super-tramp, se: w-h-davies_the-autobiography-of-a-super-tramp, title: "The Autobiography of a Super-Tramp", author: "W. H. Davies", author_sort: "Davies, W. H.", author_died: 1940, published: 1908, category: non-fiction, subject: "Memoir",
+     summary: "A Welsh poet's years riding the rails as a hobo in America."}
+  - {slug: addams-twenty-years-at-hull-house, se: jane-addams_twenty-years-at-hull-house, title: "Twenty Years at Hull-House", author: "Jane Addams", author_sort: "Addams, Jane", author_died: 1935, published: 1910, category: non-fiction, subject: "Memoir",
+     summary: "The founding of Chicago's settlement house and the birth of social work."}
+
+  # ── Non-fiction: travel & nature (11) ──────────────────────────────────────
+  - {slug: darwin-the-voyage-of-the-beagle, se: charles-darwin_the-voyage-of-the-beagle, title: "The Voyage of the Beagle", author: "Charles Darwin", author_sort: "Darwin, Charles", author_died: 1882, published: 1839, category: non-fiction, subject: "Travel",
+     summary: "Five years around the world — the journey that led Darwin to evolution."}
+  - {slug: twain-the-innocents-abroad, se: mark-twain_the-innocents-abroad, title: "The Innocents Abroad", author: "Mark Twain", author_sort: "Twain, Mark", author_died: 1910, published: 1869, category: non-fiction, subject: "Travel",
+     summary: "Twain's comic account of American tourists in Europe and the Holy Land."}
+  - {slug: twain-roughing-it, se: mark-twain_roughing-it, title: "Roughing It", author: "Mark Twain", author_sort: "Twain, Mark", author_died: 1910, published: 1872, category: non-fiction, subject: "Travel",
+     summary: "Stagecoaches, silver mines and Hawaii — Twain's years in the Wild West."}
+  - {slug: stevenson-travel-essays, se: robert-louis-stevenson_travel-essays, title: "Travel Essays", author: "Robert Louis Stevenson", author_sort: "Stevenson, Robert Louis", author_died: 1894, published: 1878, category: non-fiction, subject: "Travel",
+     summary: "«Travels with a Donkey in the Cévennes», «An Inland Voyage» and other journeys."}
+  - {slug: dana-two-years-before-the-mast, se: richard-henry-dana-jr_two-years-before-the-mast, title: "Two Years Before the Mast", author: "Richard Henry Dana Jr.", author_sort: "Dana, Richard Henry", author_died: 1882, published: 1840, category: non-fiction, subject: "Travel",
+     summary: "A Harvard student sails as a common seaman around Cape Horn to California."}
+  - {slug: slocum-sailing-alone-around-the-world, se: joshua-slocum_sailing-alone-around-the-world, title: "Sailing Alone Around the World", author: "Joshua Slocum", author_sort: "Slocum, Joshua", author_died: 1909, published: 1900, category: non-fiction, subject: "Travel",
+     summary: "The first solo circumnavigation, in the sloop Spray, 1895–98."}
+  - {slug: shackleton-south, se: ernest-shackleton_south, title: "South", author: "Ernest Shackleton", author_sort: "Shackleton, Ernest", author_died: 1922, published: 1919, strip_images: true, strip_images_reason: "photographs by Frank Hurley (†1962)", category: non-fiction, subject: "Travel",
+     summary: "The Endurance crushed in the ice and the astonishing rescue of her crew."}
+  - {slug: muir-my-first-summer-in-the-sierra, se: john-muir_my-first-summer-in-the-sierra, title: "My First Summer in the Sierra", author: "John Muir", author_sort: "Muir, John", author_died: 1914, published: 1911, category: non-fiction, subject: "Nature",
+     summary: "A shepherd's summer in Yosemite, written by the father of the national parks."}
+  - {slug: wollstonecraft-letters-from-sweden-norway-and-denmark, se: mary-wollstonecraft_letters-written-during-a-short-residence-in-sweden-norway-and-denmark, title: "Letters Written During a Short Residence in Sweden, Norway, and Denmark", author: "Mary Wollstonecraft", author_sort: "Wollstonecraft, Mary", author_died: 1797, published: 1796, category: non-fiction, subject: "Travel",
+     summary: "Wollstonecraft's Scandinavian journey — part travelogue, part love letter."}
+  - {slug: roosevelt-through-the-brazilian-wilderness, se: theodore-roosevelt_through-the-brazilian-wilderness, title: "Through the Brazilian Wilderness", author: "Theodore Roosevelt", author_sort: "Roosevelt, Theodore", author_died: 1919, published: 1914, strip_images: true, strip_images_reason: "expedition photos by several photographers whose death years are unknown", category: non-fiction, subject: "Travel",
+     summary: "The ex-president's near-fatal descent of the River of Doubt in the Amazon."}
+  - {slug: belloc-the-path-to-rome, se: hilaire-belloc_the-path-to-rome, title: "The Path to Rome", author: "Hilaire Belloc", author_sort: "Belloc, Hilaire", author_died: 1953, published: 1902, category: non-fiction, subject: "Travel",
+     summary: "A walking pilgrimage from Toul to Rome, full of digressions and good humour."}
+
+  # ── Non-fiction: science (4) ───────────────────────────────────────────────
+  - {slug: darwin-the-origin-of-species, se: charles-darwin_the-origin-of-species, title: "On the Origin of Species", author: "Charles Darwin", author_sort: "Darwin, Charles", author_died: 1882, published: 1859, category: non-fiction, subject: "Science",
+     summary: "Evolution by natural selection — the book that changed biology."}
+  - {slug: darwin-the-descent-of-man, gutenberg: 2300, title: "The Descent of Man", author: "Charles Darwin", author_sort: "Darwin, Charles", author_died: 1882, published: 1871, category: non-fiction, subject: "Science",
+     summary: "Darwin applies evolution to humanity and introduces sexual selection."}
+  - {slug: faraday-the-chemical-history-of-a-candle, gutenberg: 14474, title: "The Chemical History of a Candle", author: "Michael Faraday", author_sort: "Faraday, Michael", author_died: 1867, editor: "William Crookes", editor_died: 1919, published: 1861, category: non-fiction, subject: "Science",
+     summary: "Six Christmas lectures for young people at the Royal Institution — science from a single flame."}
+  - {slug: freud-the-interpretation-of-dreams, gutenberg: 66048, title: "The Interpretation of Dreams", author: "Sigmund Freud", author_sort: "Freud, Sigmund", author_died: 1939, translator: "A. A. Brill", translator_died: 1948, published: 1899, category: non-fiction, subject: "Psychology",
+     summary: "Dreams as wish-fulfilment — the founding book of psychoanalysis."}
+
+  # ── Non-fiction: essays (3) ────────────────────────────────────────────────
+  - {slug: hazlitt-table-talk, se: william-hazlitt_table-talk, title: "Table-Talk", author: "William Hazlitt", author_sort: "Hazlitt, William", author_died: 1830, published: 1821, category: non-fiction, subject: "Essays",
+     summary: "«On Going a Journey», «The Pleasure of Painting» — the master of the English familiar essay."}
+  - {slug: chesterton-heretics, se: g-k-chesterton_heretics, title: "Heretics", author: "G. K. Chesterton", author_sort: "Chesterton, G. K.", author_died: 1936, published: 1905, category: non-fiction, subject: "Essays",
+     summary: "Chesterton spars with Shaw, Wells, Kipling and the modern spirit."}
+
+  # ── Non-fiction: self-improvement (3) ──────────────────────────────────────
+  - {slug: smiles-self-help, gutenberg: 935, title: "Self-Help", author: "Samuel Smiles", author_sort: "Smiles, Samuel", author_died: 1904, published: 1859, category: non-fiction, subject: "Self-improvement",
+     summary: "«Heaven helps those who help themselves» — the Victorian bestseller of perseverance."}
+  - {slug: allen-as-a-man-thinketh, gutenberg: 4507, title: "As a Man Thinketh", author: "James Allen", author_sort: "Allen, James", author_died: 1912, published: 1903, category: non-fiction, subject: "Self-improvement",
+     summary: "A short classic on how thought shapes character and circumstance."}
+  - {slug: bennett-how-to-live-on-24-hours-a-day, gutenberg: 2274, title: "How to Live on 24 Hours a Day", author: "Arnold Bennett", author_sort: "Bennett, Arnold", author_died: 1931, published: 1908, category: non-fiction, subject: "Self-improvement",
+     summary: "Bennett's practical, witty advice on spending your leisure hours well."}

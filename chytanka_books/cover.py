@@ -71,7 +71,9 @@ def _fit_title(draw, text: str, fonts_dir: Path, max_w: int, max_lines: int = 4)
     for size in range(168, 70, -6):
         font = _font(fonts_dir, "Literata-SemiBold.ttf", size)
         lines = _wrap(draw, text, font, max_w)
-        if len(lines) <= max_lines and all(draw.textlength(l, font=font) <= max_w for l in lines):
+        # keep the title block clear of the subtitle and edition line below it
+        if len(lines) <= max_lines and all(draw.textlength(l, font=font) <= max_w for l in lines) \
+                and int(size * 1.18) * len(lines) <= 540:
             return font, lines, size
     font = _font(fonts_dir, "Literata-SemiBold.ttf", 72)
     return font, _wrap(draw, text, font, max_w), 72
@@ -85,6 +87,7 @@ def render_cover(
     edition_line: str | None,
     fonts_dir: Path,
     logo_png: Path,
+    brand_line: str = "Читанка · суспільне надбання",
 ) -> Image.Image:
     img = Image.new("L", (W, H), 255)
     d = ImageDraw.Draw(img)
@@ -131,7 +134,7 @@ def render_cover(
     logo = _render_logo(logo_png, 120)
     img.paste(logo, (cx - 60, 1440))
     f_brand = _font(fonts_dir, "Literata-Regular.ttf", 36)
-    _draw_tracked(d, cx, 1582, "Читанка · суспільне надбання", f_brand, INK, 3)
+    _draw_tracked(d, cx, 1582, brand_line, f_brand, INK, 3)
     return img
 
 

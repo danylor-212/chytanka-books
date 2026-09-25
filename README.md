@@ -1,6 +1,6 @@
 # Читанка — Книжки
 
-Статичний OPDS 1.2 (Atom) каталог безкоштовних EPUB української класики в суспільному надбанні.
+Статичний OPDS 1.2 (Atom) каталог безкоштовних EPUB класики в суспільному надбанні — української та англійської.
 Книжки генеруються з [uk.wikisource.org](https://uk.wikisource.org) через
 [WS Export](https://ws-export.wmcloud.org), чистяться і публікуються на GitHub Pages.
 Каталог призначений для вшивання в прошивку читалки «Читанка» (форк CrossInk для Xteink X4/X3) як сервера за замовчуванням.
@@ -12,6 +12,9 @@
 
 | Файл | Призначення |
 |---|---|
+| `books-en.yaml` | англійські книжки: репозиторій Standard Ebooks або номер Project Gutenberg, автор/перекладач і роки смерті, fiction / non-fiction |
+| `chytanka_books/english.py` | збирання англійських книжок (`se build` із GitHub SE / PG) і мінімальні зміни |
+| `chytanka_books/catalogue.py` | дерево OPDS (мова → автор → книжки) і лендинг |
 | `books.yaml` | кураторський список: сторінка Вікіджерел, видання, рік смерті автора, прапорці |
 | `build.py` | збирання: завантаження → чистка → обкладинка → перевірка → `public/` |
 | `chytanka_books/epub.py` | постобробка EPUB (шрифти, розмітка, виноски, ілюстрації, OPF/nav/NCX) |
@@ -29,7 +32,11 @@
 public/
   index.html               лендинг українською
   LICENSE-BOOKS.txt        атрибуції по кожній книжці
-  opds/index.xml           acquisition-фід (≤50 записів на сторінку, далі rel="next" → all-2.xml …)
+  opds/index.xml           навігаційний корінь: Українська · English · Усі книжки
+  opds/uk/index.xml        жанри + автори (українська абетка), ≤50 рядків на сторінку, далі rel="next"
+  opds/uk/<автор>.xml      книжки автора;  opds/uk/genre-<жанр>.xml — книжки жанру
+  opds/en/index.xml        Fiction, Non-fiction + автори (за прізвищем);  opds/en/<author>.xml, fiction.xml, nonfiction.xml
+  opds/all.xml, all-2.xml… плаский список усіх книжок (старий формат, для наявних посилань)
   books/<slug>.epub
   covers/<slug>.jpg        мініатюра 200×300
   covers/<slug>-600.jpg    обкладинка 600×900
@@ -69,11 +76,34 @@ tools/opds_harness/run.sh                      # перевірити фід п�
 
 Некоректний inline-CSS із шаблонів Вікіджерел (`width:;`, незбалансовані лапки тощо) і вікі-хаки верстки (`position`, `z-index`, `font-family`) вичищаються генерично в `sanitize_inline_styles`.
 
+## Англійські книжки (English books)
+
+- **Відбір** (`books-en.yaml`): 41 художня + 88 нехудожніх книжок (філософія, політика, економіка, історія,
+  мемуари, подорожі, наука, есеї, саморозвиток). Автори **і перекладачі** померли до 1954 р.; тексти — PD у США.
+  Виключено, наприклад, «Мистецтво війни» (перекладач Лайонел Джайлз †1958), «Суспільний договір» (Коул †1959),
+  «Трактат» Вітгенштайна (Оґден †1957), «Нікомахову етику» (рік смерті Ф. Г. Пітерса не встановлено).
+- **Джерело — Standard Ebooks** (CC0). У `robots.txt` сайту standardebooks.org завантаження `/ebooks/*/downloads/*`
+  заборонені для AI-агентів, тому конвеєр **не звертається до сайту**: клонує публічний репозиторій
+  `github.com/standardebooks/<книжка>` і збирає EPUB інструментом SE `se build` (пакет `standardebooks`) — це та сама
+  «compatible» збірка, яку роздає сайт. Кеш — за комітом (`--refresh-en` перевіряє `git ls-remote`).
+- **Запасне джерело — Project Gutenberg** (лише де в SE немає ключового твору: Монтень, Спіноза, «Політика»
+  Аристотеля, «Походження людини», Фарадей, Фройд, Смайлс, Аллен, Беннетт). Повну ліцензію PG залишено у файлі.
+- **Обкладинки — «Читанки»** для всіх мов: картини на обкладинках SE лише «вважаються PD у США» (роки смерті художників
+  не перевірені), важать ~0,6 МБ кожна й погано виглядають на e-ink; типографічна обкладинка однакова для каталогу.
+- **Мінімальні зміни**: обкладинка, сторінка «About this edition» («похідне від, не офіційний випуск Standard Ebooks /
+  Project Gutenberg»), `dc:identifier = urn:chytanka:book:<slug>` (оригінальний — у `dc:source`), вбудовані шрифти
+  (якщо є). Текст, розмітка, CSS, сторінки Imprint / Colophon / Uncopyright SE і шапка та ліцензія PG — без змін.
+  `dc:language` лишається як у джерелі (`en`, `en-US`, `en-GB`); прошивка бере первинний підтег (`en`).
+
 ## Обмеження прошивки, під які зроблено фід
 
 - Тільки Atom; книжка = `link rel="…opds-spec.org/acquisition…" type="application/epub+zip"` з `.epub` в href.
 - `MAX_OPDS_FEED_ENTRIES = 50` у chytanka-main → не більше 50 записів на сторінку, далі `rel="next"`.
 - `UrlUtils::buildUrl` не розв'язує відносні URL за RFC 3986 → **у фіді лише абсолютні URL**. Тому `site.base_url` у `books.yaml` треба змінити, якщо каталог переїде (напр. на власний домен).
+- Навігація: рядок фіду — «NAV», якщо в ньому є посилання з типом `application/atom+xml` (rel не важливий; якщо таких
+  кілька, береться **останнє**), і «BOOK», якщо є acquisition-посилання `application/epub+zip`. Глибина необмежена
+  (стек історії), «Назад» повертає на попередній фід. Навігаційні рядки показують лише назву, тож кількість книжок — у назві.
+  Перевірка: `tools/opds_harness/run.sh --crawl --walk --expect-books N` проходить усе дерево парсером і `UrlUtils` прошивки.
 - Пошук у прошивці — лише шаблон `{searchTerms}`; статичний сайт шукати не вміє, тож `rel="search"` немає.
 - `MAX_TITLE_CHARS = 160` рахує **байти** й може розрізати UTF-8 посеред літери → назви у фіді скорочуються до 160 байтів по межі слова з «…» (поле `feed_title` для ручного варіанта).
 - Парсер шукає імена елементів через `strstr(name, ":id")` тощо, тому у фіді немає `dc:identifier`.
@@ -93,8 +123,10 @@ tools/opds_harness/run.sh                      # перевірити фід п�
 
 ## English
 
-**Chytanka Books** is a static OPDS 1.2 (Atom) catalogue of public-domain Ukrainian classics, built from
-uk.wikisource via WS Export and served from GitHub Pages. It is meant to be the default catalogue of the Chytanka
+**Chytanka Books** is a static OPDS 1.2 (Atom) catalogue of public-domain classics — Ukrainian (from uk.wikisource
+via WS Export) and English (41 fiction + 88 non-fiction, from Standard Ebooks' CC0 GitHub sources built with their own
+`se build`, with Project Gutenberg as a fallback) — served from GitHub Pages. The feed is a tree:
+`opds/index.xml` → language → author (or genre / fiction / non-fiction) → books; `opds/all.xml` keeps the flat list. It is meant to be the default catalogue of the Chytanka
 e-reader firmware (a CrossInk fork for Xteink X4/X3).
 
 `build.py` downloads each title listed in `books.yaml`. It strips the ~4 MB of embedded FreeSerif fonts and cleans the

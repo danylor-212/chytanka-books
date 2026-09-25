@@ -32,7 +32,7 @@ NS = {"opf": OPF, "dc": DC}
 MAX_XHTML_BYTES = 462_000
 
 
-def validate_epub(data: bytes) -> list[str]:
+def validate_epub(data: bytes, lang: str = "uk") -> list[str]:
     errors: list[str] = []
     try:
         z = zipfile.ZipFile(io.BytesIO(data))
@@ -85,7 +85,9 @@ def validate_epub(data: bytes) -> list[str]:
         manifest_files.add(p)
         if p not in names:
             errors.append(f"manifest item missing from zip: {p}")
-    stray = names - manifest_files - {"mimetype", opf_path} - {n for n in names if n.startswith("META-INF/")}
+    # Standard Ebooks ship an ONIX accessibility record next to the OPF; it is not a publication resource.
+    stray = names - manifest_files - {"mimetype", opf_path} - {n for n in names if n.startswith("META-INF/")} \
+        - {n for n in names if n.endswith("/onix.xml") or n == "onix.xml"}
     for s in sorted(stray):
         errors.append(f"file not in manifest: {s}")
 
@@ -103,9 +105,10 @@ def validate_epub(data: bytes) -> list[str]:
         errors.append("no EPUB3 nav document")
 
     md = opf.find("opf:metadata", NS)
-    lang = [e.text for e in md.findall("dc:language", NS)]
-    if lang != ["uk"]:
-        errors.append(f"dc:language is {lang}, expected ['uk']")
+    langs = [(e.text or "").strip() for e in md.findall("dc:language", NS)]
+    # primary subtag must match (firmware strips the region: "en-US" -> "en")
+    if not langs or langs[0].split("-")[0].lower() != lang:
+        errors.append(f"dc:language is {langs}, expected primary subtag {lang!r}")
     for tag in ("title", "creator", "identifier"):
         vals = [e.text for e in md.findall(f"dc:{tag}", NS) if (e.text or "").strip()]
         if not vals:
@@ -127,6 +130,7 @@ def validate_epub(data: bytes) -> list[str]:
         if meta_cover is None or meta_cover.get("content") != covers[0].get("id"):
             errors.append("EPUB2 <meta name=cover> does not point at the cover image item")
 
+    id_cache: dict[str, set] = {}
     for iid, it in items.items():
         mt = it.get("media-type") or ""
         href = it.get("href") or ""
@@ -149,4 +153,10 @@ def validate_epub(data: bytes) -> list[str]:
                 target = posixpath.normpath(posixpath.join(posixpath.dirname(p), ref.split("#")[0]))
                 if target not in names:
                     errors.append(f"broken internal reference in {p}: {ref}")
+                elif "#" in ref and target.endswith((".xhtml", ".html")):
+                    frag = ref.split("#", 1)[1]
+                    if target not in id_cache:
+                        id_cache[target] = set(re.findall(r'\sid="([^"]+)"', z.read(target).decode("utf-8", "replace")))
+                    if frag and frag not in id_cache[target]:
+                        errors.append(f"dangling fragment in {p}: {ref}")
     return errors

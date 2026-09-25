@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><id>lesia</id><title>lesia</title><updated>2026-01-01T00:00:00Z</updated>
+<entry><id>lisova</id><title>Лісова пісня</title><author><name>Леся Українка</name></author><updated>2026-01-01T00:00:00Z</updated><link rel="http://opds-spec.org/image" type="image/jpeg" href="https://example.test/cat/c.jpg"/><link rel="alternate" type="text/html" href="https://x.test/"/><link rel="http://opds-spec.org/acquisition/open-access" type="application/epub+zip" href="https://example.test/cat/books/lisova.epub"/></entry>
+</feed>

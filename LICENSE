@@ -38,6 +38,14 @@ This repository contains material under several licences.
    Атрибуції по кожній книжці: сторінка «Про це видання» в EPUB і
    public/LICENSE-BOOKS.txt.
 
+2a. Англійські EPUB / English EPUBs (public/books/*.epub from books-en.yaml)
+   - Texts: public domain (authors and translators died before 1954; US public domain).
+   - Derived from Standard Ebooks editions (CC0 1.0 Universal) or Project Gutenberg eBooks
+     (the full Project Gutenberg License is kept inside each such file, as it requires).
+   - Chytanka's changes (cover, «About this edition» page, identifier) are dedicated to the
+     public domain under CC0 1.0. These files are not official Standard Ebooks or Project
+     Gutenberg releases.
+
 3. Обкладинки (public/covers/*, images/cover.jpg в EPUB) — CC BY-SA 4.0.
    Шрифт Literata (assets/fonts/) — SIL Open Font License 1.1, див. assets/fonts/OFL.txt.
    Знак «Читанки» (assets/logo/) — знак проєкту; використовується для позначення
