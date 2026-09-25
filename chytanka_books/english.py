@@ -47,41 +47,88 @@ SHRINK_OVER_BYTES = 150_000
 
 # --------------------------------------------------------------------------- fetch
 
-def _run(cmd: list[str], **kw) -> str:
-    return subprocess.run(cmd, check=True, capture_output=True, text=True, **kw).stdout
+def _run(cmd: list[str], timeout: int | None = None, **kw) -> str:
+    return subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=timeout, **kw).stdout
 
 
 def se_head_sha(repo: str) -> str:
-    out = _run(["git", "ls-remote", SE_GITHUB.format(repo=repo), "HEAD"])
+    out = _run(["git", "ls-remote", SE_GITHUB.format(repo=repo), "HEAD"], timeout=120)
     return out.split()[0]
 
 
-def fetch_se(repo: str, cache: Path, refresh: bool = False, se_bin: str | None = None) -> tuple[bytes, str]:
-    """Return (compatible EPUB bytes, source commit sha). Cached per commit."""
+class RebuildBudget:
+    """Caps how many Standard Ebooks books one run may rebuild (CI job-time safety).
+
+    SE_MAX_REBUILDS (default 12) — rebuilds allowed per run; over budget, a book whose
+    source changed keeps its previously built (stale) EPUB and is rebuilt on a later run.
+    SE_BUILD_TIMEOUT (seconds, default 1800) — per-book limit for `se build`.
+    """
+
+    def __init__(self, limit: int | None = None):
+        import threading
+
+        self.limit = int(os.environ.get("SE_MAX_REBUILDS", "12")) if limit is None else limit
+        self.used = 0
+        self.deferred: list[str] = []
+        self._lock = threading.Lock()
+
+    def take(self, repo: str) -> bool:
+        with self._lock:
+            if self.used < self.limit:
+                self.used += 1
+                return True
+            self.deferred.append(repo)
+            return False
+
+
+def fetch_se(repo: str, cache: Path, refresh: bool = False, se_bin: str | None = None,
+             budget: RebuildBudget | None = None) -> tuple[bytes, str]:
+    """Return (compatible EPUB bytes, source commit sha). Cached per SE source commit.
+
+    Without `refresh` a cached build is used as-is. With `refresh`, `git ls-remote` decides:
+    unchanged commit -> cached build; changed -> rebuild (if the budget allows; otherwise the
+    stale build is used). A book with no cached build at all is always built.
+    """
     built = cache / "built"
     built.mkdir(parents=True, exist_ok=True)
     stamp = built / f"{repo}.sha"
     epub = built / f"{repo}.epub"
-    if epub.exists() and stamp.exists() and not refresh:
+    have = epub.exists() and stamp.exists()
+    if have and not refresh:
         return epub.read_bytes(), stamp.read_text().strip()
-    sha = se_head_sha(repo)
-    if epub.exists() and stamp.exists() and stamp.read_text().strip() == sha:
-        return epub.read_bytes(), sha
+    if have:
+        sha = se_head_sha(repo)
+        old = stamp.read_text().strip()
+        if old == sha:
+            return epub.read_bytes(), sha
+        if budget is not None and not budget.take(repo):
+            print(f"   SE {repo}: source changed ({old[:8]} -> {sha[:8]}) but rebuild budget used; keeping {old[:8]}")
+            return epub.read_bytes(), old
+    elif budget is not None:
+        budget.take(repo)  # first build of a new book always happens, but counts
     src = cache / "src" / repo
     if src.exists():
         shutil.rmtree(src)
     src.parent.mkdir(parents=True, exist_ok=True)
-    _run(["git", "clone", "-q", "--depth", "1", SE_GITHUB.format(repo=repo), str(src)])
-    sha = _run(["git", "-C", str(src), "rev-parse", "HEAD"]).strip()
-    se = se_bin or os.environ.get("SE_BIN") or shutil.which("se") or "se"
-    with tempfile.TemporaryDirectory() as tmp:
-        _run([se, "build", f"--output-dir={tmp}", str(src)])
-        # SE names the file from the identifier, which can differ from the repo name
-        # (multi-author books: "karl-marx-friedrich-engels_…"); take the non-"advanced" build.
-        built_files = [f for f in Path(tmp).glob("*.epub") if not f.name.endswith("_advanced.epub")]
-        if len(built_files) != 1:
-            raise RuntimeError(f"se build produced {[f.name for f in Path(tmp).glob('*.epub')]}")
-        shutil.copyfile(built_files[0], epub)
+    timeout = int(os.environ.get("SE_BUILD_TIMEOUT", "1800"))
+    try:
+        _run(["git", "clone", "-q", "--depth", "1", SE_GITHUB.format(repo=repo), str(src)], timeout=600)
+        sha = _run(["git", "-C", str(src), "rev-parse", "HEAD"]).strip()
+        se = se_bin or os.environ.get("SE_BIN") or shutil.which("se") or "se"
+        with tempfile.TemporaryDirectory() as tmp:
+            _run([se, "build", f"--output-dir={tmp}", str(src)], timeout=timeout)
+            # SE names the file from the identifier, which can differ from the repo name
+            # (multi-author books: "karl-marx-friedrich-engels_…"); take the non-"advanced" build.
+            built_files = [f for f in Path(tmp).glob("*.epub") if not f.name.endswith("_advanced.epub")]
+            if len(built_files) != 1:
+                raise RuntimeError(f"se build produced {[f.name for f in Path(tmp).glob('*.epub')]}")
+            shutil.copyfile(built_files[0], epub)
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, RuntimeError) as e:
+        shutil.rmtree(src, ignore_errors=True)
+        if have:
+            print(f"   SE {repo}: rebuild failed ({type(e).__name__}); keeping the previous build")
+            return epub.read_bytes(), stamp.read_text().strip()
+        raise
     stamp.write_text(sha)
     shutil.rmtree(src, ignore_errors=True)
     time.sleep(1)

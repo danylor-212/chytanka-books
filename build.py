@@ -318,7 +318,8 @@ def main() -> int:
         todo = [normalize_book(b) for b in cfg_en["books"] if not args.only or b["slug"] in args.only]
         # clone + `se build` is slow (~10–20 s per book): run up to 4 in parallel, then process in order
         pool = ThreadPoolExecutor(max_workers=int(os.environ.get("SE_JOBS", "4")))
-        se_jobs = {b["slug"]: pool.submit(english.fetch_se, b["se"], en_cache, args.refresh_en)
+        budget = english.RebuildBudget()
+        se_jobs = {b["slug"]: pool.submit(english.fetch_se, b["se"], en_cache, args.refresh_en, None, budget)
                    for b in todo if b.get("se")}
         for book in todo:
             print(f"== en:{book['slug']}")
@@ -366,6 +367,8 @@ def main() -> int:
             published_en.append({**book, "_lang": "en", "_size": len(epub), "_updated": pipeline, "_source_url": src_url,
                                  "_commit": commit})
         pool.shutdown()
+        print(f"Standard Ebooks: {budget.used} (re)built this run (limit {budget.limit}); "
+              f"deferred to a later run: {len(budget.deferred)} {budget.deferred[:10]}")
 
     for rel, xml in build_catalogue(site, published, published_en).items():
         (out / rel).parent.mkdir(parents=True, exist_ok=True)

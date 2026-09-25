@@ -16,9 +16,13 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  EN_SEED_TAG: en-cache-2026-09-25   # release holding en-cache.tar (see README «English books»)
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 300   # hard stop well under the 6 h GitHub limit
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +42,19 @@ jobs:
         # standardebooks.org download URLs are never used.
         run: pip install standardebooks
 
-      - name: Restore English build cache
+      - name: Seed English build cache (release asset)
+        # Pre-built Standard Ebooks EPUBs keyed by SE source commit (built/<repo>.epub + .sha) and
+        # the Project Gutenberg downloads, so a run never has to `se build` all 120 books.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/ws-cache/en"
+          gh release download "$EN_SEED_TAG" -R "$GITHUB_REPOSITORY" -p en-cache.tar -D "$RUNNER_TEMP"
+          tar -xf "$RUNNER_TEMP/en-cache.tar" -C "$RUNNER_TEMP/ws-cache/en"
+          rm "$RUNNER_TEMP/en-cache.tar"
+          echo "seeded: $(ls "$RUNNER_TEMP/ws-cache/en/built" | grep -c '\.epub$') SE builds"
+
+      - name: Restore English build cache (newer builds from previous runs)
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/ws-cache/en
@@ -50,7 +66,13 @@ jobs:
       - name: Build EPUBs + OPDS feed
         # Fetches fresh exports from ws-export.wmcloud.org (polite: 2 s between books).
         # Exits non-zero if any EPUB fails the structural checks.
-        # --refresh-en: `git ls-remote` every SE repo and rebuild only books whose source changed.
+        # --refresh-en: `git ls-remote` every SE repo and rebuild only books whose source changed,
+        # at most SE_MAX_REBUILDS per run (the rest keep their previous build until a later run),
+        # each `se build` limited to SE_BUILD_TIMEOUT seconds.
+        env:
+          SE_MAX_REBUILDS: "12"
+          SE_BUILD_TIMEOUT: "1800"
+          SE_JOBS: "4"
         run: python build.py --cache "$RUNNER_TEMP/ws-cache" --refresh-en
 
       - uses: actions/setup-java@v4
